@@ -927,10 +927,10 @@ public class BluetoothA2dpService extends IBluetoothA2dp.Stub {
                     case BluetoothA2dp.STATE_DISCONNECTING:
                         handleSinkStateChange(device, BluetoothA2dp.STATE_DISCONNECTING,
                                               BluetoothA2dp.STATE_DISCONNECTED);
+                        mAudioDevices.clear();
                         break;
                 }
             }
-            mAudioDevices.clear();
         }
 
     }
