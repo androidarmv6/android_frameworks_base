@@ -55,6 +55,11 @@ public final class Settings {
 
     // Intent actions for Settings
 
+    /**
+    * Option to change statusbar transparency
+    * @hide
+    */
+    public static final String STATUSBAR_TRANSPARENCY = "statusbar_transparency";
 
    /**
     * Intent actions for Settings
