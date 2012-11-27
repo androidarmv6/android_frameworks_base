@@ -24,7 +24,7 @@ PRODUCT_COPY_FILES += \
 	$(LOCAL_PATH)/effects/old/KeypressSpacebar.ogg:system/media/audio/ui/KeypressSpacebar.ogg \
 	$(LOCAL_PATH)/effects/old/KeypressStandard.ogg:system/media/audio/ui/KeypressStandard.ogg \
 	$(LOCAL_PATH)/effects/old/Lock.ogg:system/media/audio/ui/Lock.ogg \
-	$(LOCAL_PATH)/effects/old/LowBattery.ogg:system/media/audio/ui/LowBattery.ogg \
+	$(LOCAL_PATH)/effects/old/LowBattery.ogg:system/media/audio/ui/LowBattery.old \
 	$(LOCAL_PATH)/effects/old/VideoRecord.ogg:system/media/audio/ui/VideoRecord.ogg \
 	$(LOCAL_PATH)/effects/old/Undock.ogg:system/media/audio/ui/Undock.ogg \
 	$(LOCAL_PATH)/effects/old/Unlock.ogg:system/media/audio/ui/Unlock.ogg \
@@ -40,7 +40,7 @@ PRODUCT_COPY_FILES += \
 	$(LOCAL_PATH)/notifications/old/F1_MissedCall.ogg:system/media/audio/notifications/F1_MissedCall.ogg \
 	$(LOCAL_PATH)/notifications/old/F1_New_MMS.ogg:system/media/audio/notifications/F1_New_MMS.ogg \
 	$(LOCAL_PATH)/notifications/old/F1_New_SMS.ogg:system/media/audio/notifications/F1_New_SMS.ogg \
-	$(LOCAL_PATH)/notifications/old/F1_NewVoicemail.ogg:system/media/audio/notifications/F1_NewVoicemail \
+	$(LOCAL_PATH)/notifications/old/F1_NewVoicemail.ogg:system/media/audio/notifications/F1_NewVoicemail.ogg \
 	$(LOCAL_PATH)/notifications/old/Heaven.ogg:system/media/audio/notifications/Heaven.ogg \
 	$(LOCAL_PATH)/notifications/old/IM_Me.ogg:system/media/audio/notifications/IM_Me.ogg \
 	$(LOCAL_PATH)/notifications/old/Moonbeam.ogg:system/media/audio/notifications/Moonbeam.ogg \
