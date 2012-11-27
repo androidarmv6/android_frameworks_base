@@ -52,23 +52,24 @@ import com.android.internal.R;
  * minutes.
  */
 public class Clock extends TextView {
-    private boolean mAttached;
-    private Calendar mCalendar;
-    private String mClockFormatString;
-    private SimpleDateFormat mClockFormat;
+    protected boolean mAttached;
+    protected Calendar mCalendar;
+    protected String mClockFormatString;
+    protected SimpleDateFormat mClockFormat;
 
-    private static final int AM_PM_STYLE_NORMAL  = 0;
-    private static final int AM_PM_STYLE_SMALL   = 1;
-    private static final int AM_PM_STYLE_GONE    = 2;
+    public static final int AM_PM_STYLE_NORMAL  = 0;
+    public static final int AM_PM_STYLE_SMALL   = 1;
+    public static final int AM_PM_STYLE_GONE    = 2;
 
-    private static int AM_PM_STYLE = AM_PM_STYLE_GONE;
+    protected static int AM_PM_STYLE = AM_PM_STYLE_GONE;
 
-    private int mAmPmStyle;
-    private boolean mShowClock;
+    protected int mAmPmStyle;
+    protected boolean mShowClock;
+    protected boolean mShowCenterClock;
 
     Handler mHandler;
 
-    class SettingsObserver extends ContentObserver {
+    protected class SettingsObserver extends ContentObserver {
         SettingsObserver(Handler handler) {
             super(handler);
         }
@@ -79,6 +80,8 @@ public class Clock extends TextView {
                     Settings.System.STATUS_BAR_AM_PM), false, this);
             resolver.registerContentObserver(Settings.System.getUriFor(
                     Settings.System.STATUS_BAR_CLOCK), false, this);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.STATUS_BAR_CENTERCLOCK), false, this);
         }
 
         @Override public void onChange(boolean selfChange) {
@@ -126,6 +129,9 @@ public class Clock extends TextView {
         // The time zone may have changed while the receiver wasn't registered, so update the Time
         mCalendar = Calendar.getInstance(TimeZone.getDefault());
 
+        // Update settings
+        updateSettings();
+
         // Make sure we update to the current time
         updateClock();
     }
@@ -139,7 +145,7 @@ public class Clock extends TextView {
         }
     }
 
-    private final BroadcastReceiver mIntentReceiver = new BroadcastReceiver() {
+    protected final BroadcastReceiver mIntentReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
@@ -154,12 +160,12 @@ public class Clock extends TextView {
         }
     };
 
-    final void updateClock() {
+    protected final void updateClock() {
         mCalendar.setTimeInMillis(System.currentTimeMillis());
         setText(getSmallTime());
     }
 
-    private final CharSequence getSmallTime() {
+    protected final CharSequence getSmallTime() {
         Context context = getContext();
         boolean b24 = DateFormat.is24HourFormat(context);
         int res;
@@ -238,7 +244,7 @@ public class Clock extends TextView {
 
     }
 
-    private void updateSettings(){
+    protected void updateSettings(){
         ContentResolver resolver = mContext.getContentResolver();
 
         mAmPmStyle = (Settings.System.getInt(resolver,
@@ -256,10 +262,21 @@ public class Clock extends TextView {
         mShowClock = (Settings.System.getInt(resolver,
                 Settings.System.STATUS_BAR_CLOCK, 1) == 1);
 
-        if(mShowClock)
+        mShowCenterClock = (Settings.System.getInt(resolver,
+                Settings.System.STATUS_BAR_CENTERCLOCK, 0) == 1);
+
+        updateClockVisibility();
+    }
+
+    public void updateVisibilityFromStatusBar(boolean show) {
+        if (mShowClock && !mShowCenterClock)
+            setVisibility(show ? View.VISIBLE : View.GONE);
+    }
+
+    protected void updateClockVisibility(){
+        if (mShowClock && !mShowCenterClock)
             setVisibility(View.VISIBLE);
         else
             setVisibility(View.GONE);
     }
 }
-
