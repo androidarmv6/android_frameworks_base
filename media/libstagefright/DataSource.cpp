@@ -90,7 +90,7 @@ bool DataSource::sniff(
     for (List<SnifferFunc>::iterator it = gSniffers.begin();
          it != gSniffers.end(); ++it) {
 
-#ifdef QCOM_HARDWARE
+#if defined(QCOM_HARDWARE) && !defined(QCOM_LEGACY_OMX)
         //Dont call the first sniffer from extended extarctor
         if(it == extendedSnifferPosition)
             continue;
