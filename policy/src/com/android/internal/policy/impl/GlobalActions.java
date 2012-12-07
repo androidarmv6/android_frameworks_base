@@ -392,7 +392,9 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
 
                         /* wait for the dialog box to close */
                         try {
-                            Thread.sleep(1000); 
+                            int delay = Settings.System.getInt(mContext.getContentResolver(),
+                                            Settings.System.SCREENSHOT_DELAY, 1000);
+                            Thread.sleep(delay);
                         } catch (InterruptedException ie) {
                         }
                         
