@@ -78,5 +78,13 @@
         android:contentDescription="@string/status_bar_accessibility_dismiss_recents"
     />
 
+    <ImageView
+        android:id="@+id/recents_clear"
+        android:clickable="true"
+        android:layout_width="80px"
+        android:layout_height="@*android:dimen/status_bar_height"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true"
+        android:src="@drawable/ic_notify_clear" />
 
 </com.android.systemui.recent.RecentsPanelView>

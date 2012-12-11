@@ -416,7 +416,7 @@ public class PhoneStatusBar extends StatusBar {
 
         mClearButton = expanded.findViewById(R.id.clear_all_button);
         mClearButton.setOnClickListener(mClearButtonListener);
-        mClearButton.setAlpha(0f);
+        mClearButton.setVisibility(View.GONE);
         mClearButton.setEnabled(false);
         mDateView = (DateView)expanded.findViewById(R.id.date);
         mSettingsButton = expanded.findViewById(R.id.settings_button);
@@ -1147,17 +1147,14 @@ public class PhoneStatusBar extends StatusBar {
                     + " any=" + any + " clearable=" + clearable);
         }
 
-        if (mClearButton.isShown()) {
-            if (clearable != (mClearButton.getAlpha() == 1.0f)) {
-                ObjectAnimator.ofFloat(mClearButton, "alpha",
-                        clearable ? 1.0f : 0.0f)
-                    .setDuration(250)
-                    .start();
-            }
-        } else {
-            mClearButton.setAlpha(clearable ? 1.0f : 0.0f);
-        }
+        mClearButton.setVisibility(clearable ? View.VISIBLE : View.GONE);
         mClearButton.setEnabled(clearable);
+
+        if (DEBUG) {
+            String visibility = (mClearButton.getVisibility() == View.GONE) ?
+                                    "GONE" : "VISIBLE";
+            Slog.d(TAG, "Clear all visibility = " + visibility);
+        }
 
         /*
         if (mNoNotificationsTitle.isShown()) {

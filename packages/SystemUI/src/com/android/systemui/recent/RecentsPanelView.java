@@ -72,6 +72,7 @@ public class RecentsPanelView extends RelativeLayout implements OnItemClickListe
     private boolean mShowing;
     private Choreographer mChoreo;
     private View mRecentsDismissButton;
+    ImageView mClearRecents;
 
     private RecentTasksLoader mRecentTasksLoader;
     private ArrayList<TaskDescription> mRecentTaskDescriptions;
@@ -194,6 +195,12 @@ public class RecentsPanelView extends RelativeLayout implements OnItemClickListe
             // if there are no apps, either bring up a "No recent apps" message, or just
             // quit early
             boolean noApps = (mRecentTaskDescriptions.size() == 0);
+
+            // if no apps found, we just hide the "Clear" button as it's not needed
+            if (mClearRecents != null){
+                mClearRecents.setVisibility(noApps ? View.GONE : View.VISIBLE);
+            }
+
             if (mRecentsNoApps != null) {
                 mRecentsNoApps.setVisibility(noApps ? View.VISIBLE : View.INVISIBLE);
             } else {
@@ -355,6 +362,15 @@ public class RecentsPanelView extends RelativeLayout implements OnItemClickListe
         mRecentsScrim = findViewById(R.id.recents_bg_protect);
         mRecentsNoApps = findViewById(R.id.recents_no_apps);
         mChoreo = new Choreographer(this, mRecentsScrim, mRecentsContainer, mRecentsNoApps, this);
+        mClearRecents = (ImageView) findViewById(R.id.recents_clear);
+        if (mClearRecents != null){
+            mClearRecents.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    mRecentsContainer.removeAllViewsInLayout();
+                }
+            });
+        }
         mRecentsDismissButton = findViewById(R.id.recents_dismiss_button);
         if (mRecentsDismissButton != null) {
             mRecentsDismissButton.setOnClickListener(new OnClickListener() {
