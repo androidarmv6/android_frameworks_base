@@ -38,7 +38,6 @@ PRODUCT_PACKAGES := \
     DroidSansHebrew-Regular.ttf \
     DroidSansHebrew-Bold.ttf \
     DroidSansThai.ttf \
-    DroidSansTamil-Bold.ttf \
     DroidSerif-Regular.ttf \
     DroidSerif-Bold.ttf \
     DroidSerif-Italic.ttf \
