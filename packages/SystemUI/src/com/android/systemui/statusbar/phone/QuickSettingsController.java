@@ -17,10 +17,17 @@
 package com.android.systemui.statusbar.phone;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
+import android.bluetooth.BluetoothAdapter;
+import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.database.ContentObserver;
+import android.net.Uri;
 import android.os.Handler;
 import android.provider.Settings;
 import android.util.Log;
@@ -34,7 +41,7 @@ import com.android.systemui.quicksettings.BatteryTile;
 import com.android.systemui.quicksettings.BluetoothTile;
 import com.android.systemui.quicksettings.BrightnessTile;
 import com.android.systemui.quicksettings.BugReportTile;
-import com.android.systemui.quicksettings.FlashLightTile;
+import com.android.systemui.quicksettings.TorchTile;
 import com.android.systemui.quicksettings.GPSTile;
 import com.android.systemui.quicksettings.InputMethodTile;
 import com.android.systemui.quicksettings.MobileNetworkTile;
@@ -45,6 +52,7 @@ import com.android.systemui.quicksettings.QuickSettingsTile;
 import com.android.systemui.quicksettings.RingerModeTile;
 import com.android.systemui.quicksettings.RingerVibrationModeTile;
 import com.android.systemui.quicksettings.SleepScreenTile;
+import com.android.systemui.quicksettings.SyncTile;
 import com.android.systemui.quicksettings.ToggleLockscreenTile;
 import com.android.systemui.quicksettings.UserTile;
 import com.android.systemui.quicksettings.VibrationModeTile;
@@ -54,6 +62,13 @@ import com.android.systemui.quicksettings.WifiAPTile;
 
 public class QuickSettingsController {
     private static String TAG = "QuickSettingsController";
+
+    // Stores the broadcast receivers and content observers
+    // quick tiles register for.
+    public HashMap<String, ArrayList<QuickSettingsTile>> mReceiverMap
+        = new HashMap<String, ArrayList<QuickSettingsTile>>();
+    public HashMap<Uri, ArrayList<QuickSettingsTile>> mObserverMap
+        = new HashMap<Uri, ArrayList<QuickSettingsTile>>();
 
     /**
      * START OF DATA MATCHING BLOCK
@@ -78,11 +93,8 @@ public class QuickSettingsController {
     public static final String TILE_NETWORKMODE = "toggleNetworkMode";
     public static final String TILE_AUTOROTATE = "toggleAutoRotate";
     public static final String TILE_AIRPLANE = "toggleAirplane";
-    public static final String TILE_FLASHLIGHT = "toggleFlashlight";
+    public static final String TILE_TORCH = "toggleFlashlight";  // Keep old string for compatibility
     public static final String TILE_SLEEP = "toggleSleepMode";
-    public static final String TILE_MEDIA_PLAY_PAUSE = "toggleMediaPlayPause";
-    public static final String TILE_MEDIA_PREVIOUS = "toggleMediaPrevious";
-    public static final String TILE_MEDIA_NEXT = "toggleMediaNext";
     public static final String TILE_LTE = "toggleLte";
     public static final String TILE_WIMAX = "toggleWimax";
     public static final String TILE_PROFILE = "toggleProfile";
@@ -92,8 +104,10 @@ public class QuickSettingsController {
             + TILE_DELIMITER + TILE_BRIGHTNESS
             + TILE_DELIMITER + TILE_SETTINGS
             + TILE_DELIMITER + TILE_WIFI
-            + TILE_DELIMITER + TILE_BLUETOOTH
-            + TILE_DELIMITER + TILE_SOUND;
+            + TILE_DELIMITER + TILE_MOBILEDATA
+            + TILE_DELIMITER + TILE_BATTERY
+            + TILE_DELIMITER + TILE_AIRPLANE
+            + TILE_DELIMITER + TILE_BLUETOOTH;
     /**
      * END OF DATA MATCHING BLOCK
      */
@@ -102,6 +116,8 @@ public class QuickSettingsController {
     public PanelBar mBar;
     private final ViewGroup mContainerView;
     private final Handler mHandler;
+    private BroadcastReceiver mReceiver;
+    private ContentObserver mObserver;
     private final ArrayList<Integer> mQuickSettings;
     public PhoneStatusBar mStatusBarService;
 
@@ -125,9 +141,10 @@ public class QuickSettingsController {
     public static final int ALARM_TILE = 16;
     public static final int BUG_REPORT_TILE = 17;
     public static final int WIFI_DISPLAY_TILE = 18;
-    public static final int FLASHLIGHT_TILE = 19;
+    public static final int TORCH_TILE = 19;
     public static final int WIFIAP_TILE = 20;
     public static final int PROFILE_TILE = 21;
+    public static final int SYNC_TILE = 22;
     public static final int USER_TILE = 99;
     private InputMethodTile IMETile;
 
@@ -166,15 +183,19 @@ public class QuickSettingsController {
             } else if (tile.equals(TILE_GPS)) {
                 mQuickSettings.add(GPS_TILE);
             } else if (tile.equals(TILE_BLUETOOTH)) {
-                mQuickSettings.add(BLUETOOTH_TILE);
+                if(deviceSupportsBluetooth()) {
+                    mQuickSettings.add(BLUETOOTH_TILE);
+                }
             } else if (tile.equals(TILE_BRIGHTNESS)) {
                 mQuickSettings.add(BRIGHTNESS_TILE);
             } else if (tile.equals(TILE_SOUND)) {
                 mQuickSettings.add(SOUND_VIBRATION_TILE);
             } else if (tile.equals(TILE_SYNC)) {
-                // Not available yet
+                mQuickSettings.add(SYNC_TILE);
             } else if (tile.equals(TILE_WIFIAP)) {
-                mQuickSettings.add(WIFIAP_TILE);
+                if(deviceSupportsTelephony()) {
+                    mQuickSettings.add(WIFIAP_TILE);
+                }
             } else if (tile.equals(TILE_SCREENTIMEOUT)) {
                 // Not available yet
             } else if (tile.equals(TILE_MOBILEDATA)) {
@@ -184,26 +205,21 @@ public class QuickSettingsController {
             } else if (tile.equals(TILE_LOCKSCREEN)) {
                 mQuickSettings.add(TOGGLE_LOCKSCREEN_TILE);
             } else if (tile.equals(TILE_NETWORKMODE)) {
-                // This toggle is still not working:
-                // quicksettings.add(MOBILE_NETWORK_TYPE_TILE);
+                if(deviceSupportsTelephony()) {
+                    mQuickSettings.add(MOBILE_NETWORK_TYPE_TILE);
+                }
             } else if (tile.equals(TILE_AUTOROTATE)) {
                 mQuickSettings.add(AUTO_ROTATION_TILE);
             } else if (tile.equals(TILE_AIRPLANE)) {
                 mQuickSettings.add(AIRPLANE_MODE_TILE);
-            } else if (tile.equals(TILE_FLASHLIGHT)) {
-                mQuickSettings.add(FLASHLIGHT_TILE);
+            } else if (tile.equals(TILE_TORCH)) {
+                mQuickSettings.add(TORCH_TILE);
             } else if (tile.equals(TILE_SLEEP)) {
                 mQuickSettings.add(SLEEP_TILE);
             } else if (tile.equals(TILE_PROFILE)) {
-                if (Settings.System.getInt(resolver, Settings.System.SYSTEM_PROFILES_ENABLED, 1) == 1) {
+                if (systemProfilesEnabled(resolver)) {
                     mQuickSettings.add(PROFILE_TILE);
                 }
-            } else if (tile.equals(TILE_MEDIA_PLAY_PAUSE)) {
-                // Not available yet
-            } else if (tile.equals(TILE_MEDIA_PREVIOUS)) {
-                // Not available yet
-            } else if (tile.equals(TILE_MEDIA_NEXT)) {
-                // Not available yet
             } else if (tile.equals(TILE_WIMAX)) {
                 // Not available yet
             } else if (tile.equals(TILE_LTE)) {
@@ -230,12 +246,96 @@ public class QuickSettingsController {
 
     void setupQuickSettings() {
         LayoutInflater inflater = LayoutInflater.from(mContext);
+        // Clear out old receiver
+        if (mReceiver != null) {
+            mContext.unregisterReceiver(mReceiver);
+        }
+        mReceiver = new QSBroadcastReceiver();
+        mReceiverMap.clear();
+        ContentResolver resolver = mContext.getContentResolver();
+        // Clear out old observer
+        if (mObserver != null) {
+            resolver.unregisterContentObserver(mObserver);
+        }
+        mObserver = new QuickSettingsObserver(mHandler);
+        mObserverMap.clear();
         addQuickSettings(inflater);
+        setupBroadcastReceiver();
+        setupContentObserver();
     }
+
+    void setupContentObserver() {
+        ContentResolver resolver = mContext.getContentResolver();
+        for (Uri uri : mObserverMap.keySet()) {
+            resolver.registerContentObserver(uri, false, mObserver);
+        }
+    }
+
+    private class QuickSettingsObserver extends ContentObserver {
+        public QuickSettingsObserver(Handler handler) {
+            super(handler);
+        }
+
+        @Override
+        public void onChange(boolean selfChange, Uri uri) {
+            ContentResolver resolver = mContext.getContentResolver();
+            for (QuickSettingsTile tile : mObserverMap.get(uri)) {
+                tile.onChangeUri(resolver, uri);
+            }
+        }
+    }
+
+    void setupBroadcastReceiver() {
+        IntentFilter filter = new IntentFilter();
+        for (String action : mReceiverMap.keySet()) {
+            filter.addAction(action);
+        }
+        mContext.registerReceiver(mReceiver, filter);
+    }
+
+    private void registerInMap(Object item, QuickSettingsTile tile, HashMap map) {
+        if (map.keySet().contains(item)) {
+            ArrayList list = (ArrayList) map.get(item);
+            if (!list.contains(tile)) {
+                list.add(tile);
+            }
+        } else {
+            ArrayList<QuickSettingsTile> list = new ArrayList<QuickSettingsTile>();
+            list.add(tile);
+            map.put(item, list);
+        }
+    }
+
+    public void registerAction(Object action, QuickSettingsTile tile) {
+        registerInMap(action, tile, mReceiverMap);
+    }
+
+    public void registerObservedContent(Uri uri, QuickSettingsTile tile) {
+        registerInMap(uri, tile, mObserverMap);
+    }
+
+    private class QSBroadcastReceiver extends BroadcastReceiver {
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (action != null) {
+                for (QuickSettingsTile t : mReceiverMap.get(action)) {
+                    t.onReceive(context, intent);
+                }
+            }
+        }
+    };
 
     boolean deviceSupportsTelephony() {
         PackageManager pm = mContext.getPackageManager();
         return pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY);
+    }
+
+    boolean deviceSupportsBluetooth() {
+        return (BluetoothAdapter.getDefaultAdapter() != null);
+    }
+
+    boolean systemProfilesEnabled(ContentResolver resolver) {
+        return (Settings.System.getInt(resolver, Settings.System.SYSTEM_PROFILES_ENABLED, 1) == 1);
     }
 
     void setBar(PanelBar bar) {
@@ -331,8 +431,8 @@ public class QuickSettingsController {
                 qs = new UserTile(mContext, inflater,
                         (QuickSettingsContainerView) mContainerView, this);
                 break;
-            case FLASHLIGHT_TILE:
-                qs = new FlashLightTile(mContext, inflater,
+            case TORCH_TILE:
+                qs = new TorchTile(mContext, inflater,
                         (QuickSettingsContainerView) mContainerView, this, mHandler);
                 break;
             case WIFIAP_TILE:
@@ -341,6 +441,10 @@ public class QuickSettingsController {
                 break;
             case PROFILE_TILE:
                 qs = new ProfileTile(mContext, inflater,
+                        (QuickSettingsContainerView) mContainerView, this);
+                break;
+            case SYNC_TILE:
+                qs = new SyncTile(mContext, inflater,
                         (QuickSettingsContainerView) mContainerView, this);
                 break;
             }
@@ -361,5 +465,4 @@ public class QuickSettingsController {
     }
 
     public void updateResources() {}
-
 }
