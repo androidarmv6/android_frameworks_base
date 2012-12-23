@@ -124,7 +124,6 @@ font_src_files := \
     DroidSerif-Bold.ttf \
     DroidSerif-Italic.ttf \
     DroidSerif-BoldItalic.ttf \
-    DroidSansTamil-Bold.ttf \
     DroidSansMono.ttf \
     Clockopia.ttf \
     AndroidClock.ttf \
