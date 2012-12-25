@@ -323,15 +323,21 @@ public class NetworkManagementService extends INetworkManagementService.Stub
     private void prepareNativeDaemon() {
         mBandwidthControlEnabled = false;
 
+
         // only enable bandwidth control when support exists
         final boolean hasKernelSupport = new File("/proc/net/xt_qtaguid/ctrl").exists();
         if (hasKernelSupport) {
             Slog.d(TAG, "enabling bandwidth control");
-            try {
-                mConnector.execute("bandwidth", "enable");
+            String DUsage_show = SystemProperties.get("ro.data_usage_show");
+            if (!"true".equals(DUsage_show)) {
+                try {
+                    mConnector.execute("bandwidth", "enable");
+                    mBandwidthControlEnabled = true;
+                } catch (NativeDaemonConnectorException e) {
+                    Log.wtf(TAG, "problem enabling bandwidth controls", e);
+                }
+            } else {
                 mBandwidthControlEnabled = true;
-            } catch (NativeDaemonConnectorException e) {
-                Log.wtf(TAG, "problem enabling bandwidth controls", e);
             }
         } else {
             Slog.d(TAG, "not enabling bandwidth control");
