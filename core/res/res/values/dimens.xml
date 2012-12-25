@@ -59,6 +59,10 @@
     <!-- Min width for a tablet device -->
     <dimen name="min_xlarge_screen_width">800dp</dimen>
 
+    <!-- Resources for SE stock FM Radio app -->
+    <dimen name="semc_cornerbutton_fixedpady">52dp</dimen>
+    <dimen name="semc_text_size_extra_large">52dp</dimen>
+
     <!-- Default height of a key in the password keyboard for alpha (used by keyguard) -->
     <dimen name="password_keyboard_key_height_alpha">56dip</dimen>
     <!-- Default height of a key in the password keyboard for numeric (used by keyguard) -->

@@ -1857,9 +1857,27 @@ public class AudioService extends IAudioService.Stub implements OnFinished {
                 AudioSystem.FOR_COMMUNICATION, mForcedUseForComm, null, 0);
     }
 
+    /** @see AudioManager#setSpeakerMediaOn() */
+    public void setSpeakerMediaOn(boolean on){
+        if (on) {
+            Log.e(TAG, "Routing to speaker");
+        } else {
+            Log.e(TAG, "Routing to headphones");
+        }
+    }
+
     /** @see AudioManager#isSpeakerphoneOn() */
     public boolean isSpeakerphoneOn() {
         return (mForcedUseForComm == AudioSystem.FORCE_SPEAKER);
+    }
+
+    /** Hack for getting SE FM app working */
+    public boolean isSpeakerMediaOn() {
+        if (mForcedUseForComm == AudioSystem.FORCE_SPEAKER) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     /** @see AudioManager#setBluetoothScoOn() */

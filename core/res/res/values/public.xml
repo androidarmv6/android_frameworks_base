@@ -708,6 +708,10 @@
   <public type="dimen" name="thumbnail_height" id="0x01050001" />
   <public type="dimen" name="thumbnail_width" id="0x01050002" />
 
+  <!-- SEMC dimen for FM Radio -->
+  <public type="dimen" name="semc_cornerbutton_fixedpady" id="0x0105000b" />
+  <public type="dimen" name="semc_text_size_extra_large" id="0x0105000c" />
+
   <public type="color" name="darker_gray" id="0x01060000" />
   <public type="color" name="primary_text_dark" id="0x01060001" />
   <public type="color" name="primary_text_dark_nodisable" id="0x01060002" />
@@ -894,6 +898,12 @@
   <public type="drawable" name="ic_dialog_info" id="0x0108009b" />
   <public type="drawable" name="ic_menu_sort_alphabetically" id="0x0108009c" />
   <public type="drawable" name="ic_menu_sort_by_size" id="0x0108009d" />
+
+  <!-- SEMC drawbles for FM Radio -->
+  <public type="drawable" name="semc_button_corner_bottomleft" id="0x0108009e" />
+  <public type="drawable" name="semc_button_corner_bottomright" id="0x0108009f" />
+  <public type="drawable" name="semc_button_corner_topleft" id="0x010800a0" />
+  <public type="drawable" name="semc_button_corner_topright" id="0x010800a1" />
 
   <public type="layout" name="activity_list_item" id="0x01090000" />
   <public type="layout" name="expandable_list_content" id="0x01090001" />

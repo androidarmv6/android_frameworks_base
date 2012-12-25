@@ -4486,6 +4486,10 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
         }
     }
 
+    protected final boolean shouldMirror() {
+        return true;
+    }
+
     void ensureInputFocusOnFirstFocusable() {
         View root = getRootView();
         if (root != null) {
