@@ -513,6 +513,10 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     // (See Settings.Secure.INCALL_POWER_BUTTON_BEHAVIOR.)
     int mIncallPowerBehavior;
 
+    // Behavior of MENU button during incomming call ring.
+    // (See Settings.Secure.RING_MENU_BUTTON_BEHAVIOR.)
+    int mRingMenuBehavior;
+
     Display mDisplay;
 
     int mLandscapeRotation = 0;  // default landscape rotation
@@ -595,6 +599,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     UserHandle.USER_ALL);
             resolver.registerContentObserver(Settings.Secure.getUriFor(
                     Settings.Secure.INCALL_POWER_BUTTON_BEHAVIOR), false, this,
+                    UserHandle.USER_ALL);
+            resolver.registerContentObserver(Settings.Secure.getUriFor(
+                    Settings.Secure.RING_MENU_BUTTON_BEHAVIOR), false, this,
                     UserHandle.USER_ALL);
             resolver.registerContentObserver(Settings.System.getUriFor(
                     Settings.System.VOLUME_WAKE_SCREEN), false, this,
@@ -1312,6 +1319,10 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             mIncallPowerBehavior = Settings.Secure.getIntForUser(resolver,
                     Settings.Secure.INCALL_POWER_BUTTON_BEHAVIOR,
                     Settings.Secure.INCALL_POWER_BUTTON_BEHAVIOR_DEFAULT,
+                    UserHandle.USER_CURRENT);
+            mRingMenuBehavior = Settings.Secure.getIntForUser(resolver,
+                    Settings.Secure.RING_MENU_BUTTON_BEHAVIOR,
+                    Settings.Secure.RING_MENU_BUTTON_BEHAVIOR_DEFAULT,
                     UserHandle.USER_CURRENT);
             mVolumeWakeScreen = (Settings.System.getIntForUser(resolver,
                     Settings.System.VOLUME_WAKE_SCREEN, 0, UserHandle.USER_CURRENT) == 1);
@@ -3798,6 +3809,32 @@ public class PhoneWindowManager implements WindowManagerPolicy {
 
         // Handle special keys.
         switch (keyCode) {
+            case KeyEvent.KEYCODE_MENU: {
+                if (down) {
+                    ITelephony telephonyService = getTelephonyService();
+                    boolean incomingRinging = false;
+                    if (telephonyService != null) {
+                        try {
+                            incomingRinging = telephonyService.isRinging();
+
+                            if ((mRingMenuBehavior
+                                & Settings.Secure.RING_MENU_BUTTON_BEHAVIOR_ANSWER) != 0
+                                && incomingRinging) {
+
+                                try {
+                                    telephonyService.answerRingingCall();
+                                } catch (RemoteException ex) {
+                                    Log.w(TAG, "ITelephony threw RemoteException" + ex);
+                                }
+                            }
+                        } catch (RemoteException ex) {
+                            Log.w(TAG, "ITelephony threw RemoteException", ex);
+                        }
+                    }
+                }
+                break;
+            }
+
             case KeyEvent.KEYCODE_ENDCALL: {
                 result &= ~ACTION_PASS_TO_USER;
                 if (down) {

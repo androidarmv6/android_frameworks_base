@@ -4790,6 +4790,17 @@ public final class Settings {
         public static final String INCALL_POWER_BUTTON_BEHAVIOR = "incall_power_button_behavior";
 
         /**
+         * What happens when the user presses the Menu button when the
+         * phone is ringing.<br/>
+         * <b>Values:</b><br/>
+         * 1 - Nothing happens. (Default behavior)<br/>
+         * 2 - The Menu button answer the current call.<br/>
+         *
+         * @hide
+         */
+        public static final String RING_MENU_BUTTON_BEHAVIOR = "ring_menu_button_behavior";
+
+        /*
          * INCALL_POWER_BUTTON_BEHAVIOR value for "turn off screen".
          * @hide
          */
@@ -4807,6 +4818,25 @@ public final class Settings {
          */
         public static final int INCALL_POWER_BUTTON_BEHAVIOR_DEFAULT =
                 INCALL_POWER_BUTTON_BEHAVIOR_SCREEN_OFF;
+
+        /**
+         * RING_MENU_BUTTON_BEHAVIOR value for "do nothing".
+         * @hide
+        */
+        public static final int RING_MENU_BUTTON_BEHAVIOR_DO_NOTHING = 0x1;
+
+        /**
+         * RING_MENU_BUTTON_BEHAVIOR value for "answer".
+         * @hide
+        */
+        public static final int RING_MENU_BUTTON_BEHAVIOR_ANSWER = 0x2;
+
+        /**
+         * RING_MENU_BUTTON_BEHAVIOR default value.
+         * @hide
+        */
+        public static final int RING_MENU_BUTTON_BEHAVIOR_DEFAULT =
+                RING_MENU_BUTTON_BEHAVIOR_DO_NOTHING;
 
         /**
          * The current night mode that has been selected by the user.  Owned
