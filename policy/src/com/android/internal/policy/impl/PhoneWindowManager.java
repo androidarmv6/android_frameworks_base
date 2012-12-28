@@ -517,6 +517,10 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     // (See Settings.Secure.INCALL_BACK_BUTTON_BEHAVIOR.)
     int mIncallBackBehavior;
 
+    // Behavior of MENU button during incomming call ring.
+    // (See Settings.Secure.RING_MENU_BUTTON_BEHAVIOR.)
+    int mRingMenuBehavior;
+
     Display mDisplay;
 
     int mLandscapeRotation = 0;  // default landscape rotation
@@ -1323,6 +1327,10 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             mIncallBackBehavior = Settings.Secure.getInt(resolver,
                     Settings.Secure.INCALL_BACK_BUTTON_BEHAVIOR,
                     Settings.Secure.INCALL_BACK_BUTTON_BEHAVIOR_DEFAULT,
+                    UserHandle.USER_CURRENT);
+            mRingMenuBehavior = Settings.Secure.getInt(resolver,
+                    Settings.Secure.RING_MENU_BUTTON_BEHAVIOR,
+                    Settings.Secure.RING_MENU_BUTTON_BEHAVIOR_DEFAULT,
                     UserHandle.USER_CURRENT);
             mVolumeWakeScreen = (Settings.System.getIntForUser(resolver,
                     Settings.System.VOLUME_WAKE_SCREEN, 0, UserHandle.USER_CURRENT) == 1);
@@ -3829,6 +3837,25 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                             }
                         } catch (RemoteException ex) {
                             Log.w(TAG, "ITelephony threw RemoteException", ex);
+                        }
+                    }
+                }
+                break;
+            }
+
+            case KeyEvent.KEYCODE_MENU: {
+                if (down) {
+                    if ((mRingMenuBehavior
+                        & Settings.Secure.RING_MENU_BUTTON_BEHAVIOR_ANSWER) != 0
+                        && incomingRinging) {
+
+                        ITelephony telephonyService = getTelephonyService();
+                        if (telephonyService != null) {
+                            try {
+                                telephonyService.answerRingingCall();
+                            } catch (RemoteException ex) {
+                                Log.w(TAG, "ITelephony threw RemoteException" + ex);
+                            }
                         }
                     }
                 }
