@@ -57,6 +57,10 @@ public class WifiNative {
 
     public native static boolean unloadDriver();
 
+    public native static boolean loadHotspotDriver();
+
+    public native static boolean unloadHotspotDriver();
+
     public native static boolean startSupplicant(boolean p2pSupported);
 
     /* Sends a kill signal to supplicant. To be used when we have lost connection
