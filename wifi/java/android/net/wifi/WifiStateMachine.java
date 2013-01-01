@@ -41,6 +41,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.database.ContentObserver;
 import android.net.ConnectivityManager;
 import android.net.DhcpInfo;
@@ -2232,33 +2233,57 @@ public class WifiStateMachine extends StateMachine {
                 public void run() {
                     if (DBG) log(getName() + message.toString() + "\n");
                     mWakeLock.acquire();
-                    if(mWifiNative.unloadDriver()) {
-                        if (DBG) log("Driver unload successful");
-                        sendMessage(CMD_UNLOAD_DRIVER_SUCCESS);
 
+                    if (mContext.getResources().getBoolean(com.android.internal.R.bool.config_wifiApWeirdModuleUnload)) {
                         switch(message.arg1) {
                             case WIFI_STATE_DISABLED:
                             case WIFI_STATE_UNKNOWN:
-                                setWifiState(message.arg1);
-                                break;
+                                 if(mWifiNative.unloadDriver()) {
+                                     if (DBG) log("Driver unload successful");
+                                     sendMessage(CMD_UNLOAD_DRIVER_SUCCESS);
+                                     setWifiState(message.arg1);
+                                  } else {
+                                     loge("Failed to unload driver!");
+                                     sendMessage(CMD_UNLOAD_DRIVER_FAILURE);
+                                     setWifiState(WIFI_STATE_UNKNOWN);
+                                  }
+                                  break;
                             case WIFI_AP_STATE_DISABLED:
                             case WIFI_AP_STATE_FAILED:
-                                setWifiApState(message.arg1);
-                                break;
+                                 // C3C0: don't unload driver when AP disabled to avoid dhd unload deadlock
+                                 sendMessage(CMD_UNLOAD_DRIVER_SUCCESS);
+                                 setWifiApState(message.arg1);
+                                 break;
                         }
                     } else {
-                        loge("Failed to unload driver!");
-                        sendMessage(CMD_UNLOAD_DRIVER_FAILURE);
+                        if(mWifiNative.unloadDriver()) {
+                            if (DBG) log("Driver unload successful");
+                            sendMessage(CMD_UNLOAD_DRIVER_SUCCESS);
 
-                        switch(message.arg1) {
-                            case WIFI_STATE_DISABLED:
-                            case WIFI_STATE_UNKNOWN:
-                                setWifiState(WIFI_STATE_UNKNOWN);
-                                break;
-                            case WIFI_AP_STATE_DISABLED:
-                            case WIFI_AP_STATE_FAILED:
-                                setWifiApState(WIFI_AP_STATE_FAILED);
-                                break;
+                            switch(message.arg1) {
+                                case WIFI_STATE_DISABLED:
+                                case WIFI_STATE_UNKNOWN:
+                                    setWifiState(message.arg1);
+                                    break;
+                                case WIFI_AP_STATE_DISABLED:
+                                case WIFI_AP_STATE_FAILED:
+                                    setWifiApState(message.arg1);
+                                    break;
+                             }
+                        } else {
+                            loge("Failed to unload driver!");
+                            sendMessage(CMD_UNLOAD_DRIVER_FAILURE);
+
+                            switch(message.arg1) {
+                                case WIFI_STATE_DISABLED:
+                                case WIFI_STATE_UNKNOWN:
+                                    setWifiState(WIFI_STATE_UNKNOWN);
+                                    break;
+                                case WIFI_AP_STATE_DISABLED:
+                                case WIFI_AP_STATE_FAILED:
+                                    setWifiApState(WIFI_AP_STATE_FAILED);
+                                    break;
+                            }
                         }
                     }
                     mWakeLock.release();
@@ -3861,7 +3886,9 @@ public class WifiStateMachine extends StateMachine {
                 case WifiStateMachine.CMD_RESPONSE_AP_CONFIG:
                     WifiConfiguration config = (WifiConfiguration) message.obj;
                     if (config != null) {
-                        startSoftApWithConfig(config);
+                        if (!mContext.getResources().getBoolean(com.android.internal.R.bool.config_wifiApWeirdModuleUnload)
+                                  || !syncGetWifiApStateByName().equals("enabled"))
+                            startSoftApWithConfig(config);
                     } else {
                         loge("Softap config is null!");
                         sendMessage(CMD_START_AP_FAILURE);
