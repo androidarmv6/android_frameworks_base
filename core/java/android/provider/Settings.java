@@ -3039,6 +3039,12 @@ public final class Settings {
         public static final String UI_FORCE_OVERFLOW_BUTTON = "ui_force_overflow_button";
 
          /**
+         * Option to display navigation bar
+         * @hide
+         */
+        public static final String SHOW_NAVBAR = "show_navbar";
+
+         /**
           * Volume keys control cursor in text fields (default is 0)
           * 0 - Disabled
           * 1 - Volume up/down moves cursor left/right
