@@ -1674,7 +1674,7 @@ public class PhoneStatusBar extends BaseStatusBar {
         }
     }
 
-    public void partialFlip(float percent) {
+    public void partialFlip(float progress) {
         if (mFlipSettingsViewAnim != null) mFlipSettingsViewAnim.cancel();
         if (mScrollViewAnim != null) mScrollViewAnim.cancel();
         if (mSettingsButtonAnim != null) mSettingsButtonAnim.cancel();
