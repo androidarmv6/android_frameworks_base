@@ -2085,19 +2085,33 @@ public class BluetoothService extends IBluetooth.Stub {
     public synchronized boolean cancelBondProcess(String address) {
         mContext.enforceCallingOrSelfPermission(BLUETOOTH_ADMIN_PERM,
                                                 "Need BLUETOOTH_ADMIN permission");
+
+        BluetoothClass btClass = new BluetoothClass(getRemoteClass(address));
+        int btDeviceClass = btClass.getDeviceClass();
+        String pairState = getUpdatedRemoteDeviceProperty(address, "Paired");
+
         if (!isEnabledInternal()) return false;
 
-        if (!BluetoothAdapter.checkBluetoothAddress(address)) {
+        if (!BluetoothAdapter.checkBluetoothAddress(address))
             return false;
-        }
+
         address = address.toUpperCase();
-        if (mBondState.getBondState(address) != BluetoothDevice.BOND_BONDING) {
-            return false;
+
+        // HID PERIPHERAL_POINTING devices have BONDED state even if
+        // the pairing wasnt completed, So need to check pairState.
+        if ((btDeviceClass == BluetoothClass.Device.PERIPHERAL_POINTING) &&
+                       (mBondState.getBondState(address) == BluetoothDevice.BOND_BONDED)) {
+            if (pairState.equals("true"))
+                return false;
+        } else {
+            if (mBondState.getBondState(address) != BluetoothDevice.BOND_BONDING)
+                return false;
         }
 
-        mBondState.setBondState(address, BluetoothDevice.BOND_NONE,
-                                BluetoothDevice.UNBOND_REASON_AUTH_CANCELED);
         cancelDeviceCreationNative(address);
+
+        mBondState.setBondState(address, BluetoothDevice.BOND_NONE,
+                               BluetoothDevice.UNBOND_REASON_AUTH_CANCELED);
         return true;
     }
 
