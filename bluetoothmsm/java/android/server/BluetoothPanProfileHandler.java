@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2011 The Android Open Source Project
- * Copyright (c) 2013 The Linux Foundation. All rights reserved
+ * Copyright (c) 2013 The Linux Foundation. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -286,13 +286,12 @@ final class BluetoothPanProfileHandler {
             }
         } else {
             // PANU Role = reverse Tether
-			// MR1 Change
             if (state == BluetoothPan.STATE_CONNECTED) {
-                BluetoothTetheringDataTracker.getInstance().startReverseTether(iface);
+                BluetoothTetheringDataTracker.getInstance().startReverseTether(iface, device);
             } else if (state == BluetoothPan.STATE_DISCONNECTED &&
                   (prevState == BluetoothPan.STATE_CONNECTED ||
                   prevState == BluetoothPan.STATE_DISCONNECTING)) {
-                BluetoothTetheringDataTracker.getInstance().stopReverseTether(/*panDevice.mIface*/);
+                BluetoothTetheringDataTracker.getInstance().stopReverseTether(panDevice.mIface);
             }
         }
 
