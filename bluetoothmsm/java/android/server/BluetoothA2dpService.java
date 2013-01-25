@@ -104,8 +104,8 @@ public class BluetoothA2dpService extends IBluetoothA2dp.Stub {
     /*AVRCP 1.3 Music App Intents */
     private static final String PLAYSTATE_CHANGED = "com.android.music.playstatechanged";
     private static final String META_CHANGED = "com.android.music.metachanged";
-    private static final String PLAYSTATUS_REQUEST = "com.qualcomm.avrcp.playstatusrequest";
-    private static final String PLAYSTATUS_RESPONSE = "com.qualcomm.avrcp.playstatusresponse";
+    private static final String PLAYSTATUS_REQUEST = "com.qualcomm.music.playstatusrequest";
+    private static final String PLAYSTATUS_RESPONSE = "com.qualcomm.music.playstatusresponse";
 
     private final static String DEFAULT_METADATA_STRING = "Unknown";
     private final static String DEFAULT_METADATA_NUMBER = "0";
@@ -131,10 +131,11 @@ public class BluetoothA2dpService extends IBluetoothA2dp.Stub {
 
     TelephonyManager tmgr;
     private static final String ACTION_METADATA_CHANGED  =
-        "qualcomm.MediaPlayer.action.METADATA_CHANGED";
+        "com.qualcomm.MediaPlayer.action.METADATA_CHANGED";
 
-    private static final String PLAYERSETTINGS_REQUEST = "com.qualcomm.avrcp.playersettingsrequest";
-    private static final String PLAYERSETTINGS_RESPONSE = "com.qualcomm.avrcp.playersettingsresponse";
+    private static final String PLAYERSETTINGS_REQUEST = "com.qualcomm.music.playersettingsrequest";
+    private static final String PLAYERSETTINGS_RESPONSE =
+        "com.qualcomm.music.playersettingsresponse";
 
     private class PlayerSettings {
         public byte attr;

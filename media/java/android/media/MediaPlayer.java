@@ -18,6 +18,7 @@ package android.media;
 
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.AssetFileDescriptor;
 import android.net.Uri;
 import android.os.Handler;
@@ -537,6 +538,40 @@ public class MediaPlayer
      */
     public static final boolean APPLY_METADATA_FILTER = true;
 
+    /* {@hide}
+    */
+    private Object mContextLock = new Object();
+    private Context mContext = null;
+
+    /* {@hide}
+     */
+    private Uri mUri = null;
+
+    /* {@hide}
+     */
+    private static final String ACTION_METADATA_CHANGED  =
+        "com.qualcomm.MediaPlayer.action.METADATA_CHANGED";
+
+    /* {@hide}
+     */
+    private static final int PLAYSTATUS_STOPPED = 0x0;
+
+    /* {@hide}
+     */
+    private static final int PLAYSTATUS_PLAYING = 0x1;
+
+    /* {@hide}
+     */
+    private static final int PLAYSTATUS_PAUSED = 0x2;
+
+    /* {@hide}
+     */
+    private static final int PLAYSTATUS_SEEKFWD = 0x3;
+
+    /* {@hide}
+     */
+    private static final int PLAYSTATUS_REWIND = 0x4;
+
     /**
        Constant to disable the metadata filter during retrieval.
        // FIXME: unhide.
@@ -587,6 +622,11 @@ public class MediaPlayer
          * It's easier to create it here than in C++.
          */
         native_setup(new WeakReference<MediaPlayer>(this));
+    }
+
+    private MediaPlayer(Context context) {
+        this();
+        mContext = context;
     }
 
     /*
@@ -784,7 +824,7 @@ public class MediaPlayer
     public static MediaPlayer create(Context context, Uri uri, SurfaceHolder holder) {
 
         try {
-            MediaPlayer mp = new MediaPlayer();
+            MediaPlayer mp = new MediaPlayer(context);
             mp.setDataSource(context, uri);
             if (holder != null) {
                 mp.setDisplay(holder);
@@ -824,7 +864,7 @@ public class MediaPlayer
             AssetFileDescriptor afd = context.getResources().openRawResourceFd(resid);
             if (afd == null) return null;
 
-            MediaPlayer mp = new MediaPlayer();
+            MediaPlayer mp = new MediaPlayer(context);
             mp.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
             afd.close();
             mp.prepare();
@@ -866,6 +906,9 @@ public class MediaPlayer
         throws IOException, IllegalArgumentException, SecurityException, IllegalStateException {
 
         String scheme = uri.getScheme();
+        mContext = context;
+        mUri = uri;
+        Log.e(TAG, "Uri is  "+ mUri);
         if(scheme == null || scheme.equals("file")) {
             setDataSource(uri.getPath());
             return;
@@ -1022,6 +1065,9 @@ public class MediaPlayer
      */
     public  void start() throws IllegalStateException {
         stayAwake(true);
+
+       mA2dpHandler.obtainMessage(PLAYER_PLAY).sendToTarget();
+
         _start();
     }
 
@@ -1036,6 +1082,9 @@ public class MediaPlayer
     public void stop() throws IllegalStateException {
         stayAwake(false);
         _stop();
+
+       mA2dpHandler.obtainMessage(PLAYER_STOP).sendToTarget();
+
     }
 
     private native void _stop() throws IllegalStateException;
@@ -1049,6 +1098,9 @@ public class MediaPlayer
     public void pause() throws IllegalStateException {
         stayAwake(false);
         _pause();
+
+       mA2dpHandler.obtainMessage(PLAYER_PAUSE).sendToTarget();
+
     }
 
     private native void _pause() throws IllegalStateException;
@@ -1164,8 +1216,13 @@ public class MediaPlayer
      * @throws IllegalStateException if the internal player engine has not been
      * initialized
      */
-    public native void seekTo(int msec) throws IllegalStateException;
+    public void seekTo(int msec) throws IllegalStateException {
+       mA2dpHandler.obtainMessage(PLAYER_SEEK_TO, msec, getCurrentPosition()).sendToTarget();
 
+        _seekTo(msec);
+    }
+
+    private native void _seekTo(int msec) throws IllegalStateException;
     /**
      * Gets the current playback position.
      *
@@ -1302,6 +1359,11 @@ public class MediaPlayer
      */
     public void release() {
         stayAwake(false);
+        updateSurfaceScreenOn();
+        synchronized(mContextLock) {
+            mContext = null;
+        }
+        mUri = null;
         mOnPreparedListener = null;
         mOnBufferingUpdateListener = null;
         mOnCompletionListener = null;
@@ -1323,6 +1385,17 @@ public class MediaPlayer
     public void reset() {
         stayAwake(false);
         _reset();
+        if (mContext != null) {
+            Intent intent = new Intent(ACTION_METADATA_CHANGED);
+            intent.putExtra("duration", 0);
+            intent.putExtra("time", System.currentTimeMillis());
+            intent.putExtra("position", 0);
+            Log.d(TAG, "reset() mUri is " + mUri);
+            intent.putExtra("uripath", mUri);
+            intent.putExtra("playstate", PLAYSTATUS_STOPPED);
+            mContext.sendBroadcast(intent);
+        }
+
         // make sure none of the listeners get called anymore
         mEventHandler.removeCallbacksAndMessages(null);
     }
@@ -1940,6 +2013,93 @@ public class MediaPlayer
     @Override
     protected void finalize() { native_finalize(); }
 
+    private static final int PLAYER_SEEK_COMPLETE = 1;
+    private static final int PLAYER_PLAY = 2;
+    private static final int PLAYER_PAUSE = 3;
+    private static final int PLAYER_STOP = 4;
+    private static final int PLAYER_SEEK_TO = 5;
+
+    private Handler mA2dpHandler = new Handler()
+    {
+        @Override
+        public void handleMessage(Message msg) {
+        switch (msg.what) {
+             case PLAYER_SEEK_COMPLETE:
+               synchronized(mContextLock) {
+                    if (mContext != null) {
+                        Intent intent = new Intent(ACTION_METADATA_CHANGED);
+                        intent.putExtra("duration", getDuration());
+                        intent.putExtra("time", System.currentTimeMillis());
+                        intent.putExtra("position", getCurrentPosition());
+                        intent.putExtra("uripath", mUri);
+                        if (isPlaying()) {
+                            intent.putExtra("playstate", PLAYSTATUS_PLAYING);
+                        } else {
+                            intent.putExtra("playstate", PLAYSTATUS_PAUSED);
+                        }
+                        mContext.sendBroadcast(intent);
+                    }
+               }
+             break;
+             case PLAYER_PLAY:
+               if (mContext != null) {
+                   Intent intent = new Intent(ACTION_METADATA_CHANGED);
+                   intent.putExtra("duration", getDuration());
+                   intent.putExtra("time", System.currentTimeMillis());
+                   intent.putExtra("position", getCurrentPosition());
+                   Log.d(TAG, "start() mUri is " + mUri);
+                   intent.putExtra("uripath", mUri);
+                   intent.putExtra("playstate", PLAYSTATUS_PLAYING);
+                   mContext.sendBroadcast(intent);
+               }
+             break;
+             case PLAYER_PAUSE:
+               if (mContext != null) {
+                   Intent intent = new Intent(ACTION_METADATA_CHANGED);
+                   intent.putExtra("duration", getDuration());
+                   intent.putExtra("time", System.currentTimeMillis());
+                   intent.putExtra("position", getCurrentPosition());
+                   Log.d(TAG, "pause() mUri is " + mUri);
+                   intent.putExtra("uripath", mUri);
+                   intent.putExtra("playstate", PLAYSTATUS_PAUSED);
+                   mContext.sendBroadcast(intent);
+               }
+             break;
+             case PLAYER_STOP:
+               if (mContext != null) {
+                   Intent intent = new Intent(ACTION_METADATA_CHANGED);
+                   intent.putExtra("duration", getDuration());
+                   intent.putExtra("time", System.currentTimeMillis());
+                   intent.putExtra("position", getCurrentPosition());
+                   Log.d(TAG, "stop() mUri is " + mUri);
+                   intent.putExtra("uripath", mUri);
+                   intent.putExtra("playstate", PLAYSTATUS_STOPPED);
+                   mContext.sendBroadcast(intent);
+               }
+             break;
+             case PLAYER_SEEK_TO:
+               if (mContext != null) {
+                   Intent intent = new Intent(ACTION_METADATA_CHANGED);
+                   intent.putExtra("duration", getDuration());
+                   intent.putExtra("time", System.currentTimeMillis());
+                   intent.putExtra("position", msg.arg1);
+                   Log.d(TAG, "seekTo() mUri is " + mUri);
+                   intent.putExtra("uripath", mUri);
+                   if (msg.arg1 > msg.arg2) {
+                       intent.putExtra("playstate", PLAYSTATUS_SEEKFWD);
+                   } else {
+                       intent.putExtra("playstate", PLAYSTATUS_REWIND);
+                   }
+                   mContext.sendBroadcast(intent);
+               }
+             break;
+             default:
+               Log.e(TAG, "Unknown message type " + msg.what);
+               return;
+           }
+        }
+    };
+
     /* Do not change these values without updating their counterparts
      * in include/media/mediaplayer.h!
      */
@@ -1986,8 +2146,12 @@ public class MediaPlayer
                 return;
 
             case MEDIA_SEEK_COMPLETE:
-              if (mOnSeekCompleteListener != null)
-                  mOnSeekCompleteListener.onSeekComplete(mMediaPlayer);
+              {
+                mA2dpHandler.obtainMessage(PLAYER_SEEK_COMPLETE).sendToTarget();
+
+                  if (mOnSeekCompleteListener != null)
+                      mOnSeekCompleteListener.onSeekComplete(mMediaPlayer);
+              }
               return;
 
             case MEDIA_SET_VIDEO_SIZE:
