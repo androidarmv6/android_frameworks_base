@@ -41,7 +41,7 @@ public class BitmapFactory {
          * the same result from the decoder as if null were passed.
          */
         public Options() {
-            inDither = false;
+            inDither = true;
             inScaled = true;
         }
 
@@ -104,7 +104,7 @@ public class BitmapFactory {
          * Image are loaded with the {@link Bitmap.Config#ARGB_8888} config by
          * default.
          */
-        public Bitmap.Config inPreferredConfig = Bitmap.Config.ARGB_8888;
+        public Bitmap.Config inPreferredConfig = Bitmap.Config.RGB_565;
 
         /**
          * If dither is true, the decoder will attempt to dither the decoded
