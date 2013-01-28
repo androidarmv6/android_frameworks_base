@@ -366,7 +366,7 @@ public class WallpaperManager {
         Bitmap bm = sGlobals.peekWallpaperBitmap(mContext, true);
         if (bm != null) {
             Drawable dr = new BitmapDrawable(mContext.getResources(), bm);
-            dr.setDither(false);
+            dr.setDither(true);
             return dr;
         }
         return null;
@@ -385,7 +385,7 @@ public class WallpaperManager {
         Bitmap bm = sGlobals.peekWallpaperBitmap(mContext, false);
         if (bm != null) {
             Drawable dr = new BitmapDrawable(mContext.getResources(), bm);
-            dr.setDither(false);
+            dr.setDither(true);
             return dr;
         }
         return null;
