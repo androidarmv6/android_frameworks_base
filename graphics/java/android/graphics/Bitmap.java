@@ -722,6 +722,7 @@ public final class Bitmap implements Parcelable {
             canvas.concat(m);
 
             paint = new Paint();
+            paint.setDither(true);
             paint.setFilterBitmap(filter);
             if (transformed) {
                 paint.setAntiAlias(true);

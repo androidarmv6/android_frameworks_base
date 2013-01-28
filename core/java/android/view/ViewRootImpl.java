@@ -1203,7 +1203,7 @@ public final class ViewRootImpl implements ViewParent,
             // We used to use the following condition to choose 32 bits drawing caches:
             // PixelFormat.hasAlpha(lp.format) || lp.format == PixelFormat.RGBX_8888
             // However, windows are now always 32 bits by default, so choose 32 bits
-            attachInfo.mUse32BitDrawingCache = true;
+            attachInfo.mUse32BitDrawingCache = PixelFormat.formatHasAlpha(lp.format) || lp.format == PixelFormat.RGBX_8888;
             attachInfo.mHasWindowFocus = false;
             attachInfo.mWindowVisibility = viewVisibility;
             attachInfo.mRecomputeGlobalAttributes = false;
