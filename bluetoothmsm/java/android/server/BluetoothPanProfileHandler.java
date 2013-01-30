@@ -401,6 +401,7 @@ final class BluetoothPanProfileHandler {
             }
         } catch (Exception e) {
             Log.e(TAG, "Error configuring interface " + iface + ", :" + e);
+            mBluetoothIfaceAddresses.remove(address);
             return null;
         }
         return address;
