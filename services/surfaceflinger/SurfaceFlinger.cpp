@@ -113,7 +113,8 @@ SurfaceFlinger::SurfaceFlinger()
 #endif
         mConsoleSignals(0),
         mSecureFrameBuffer(0),
-        mUseDithering(0)
+        mUseDithering(0),
+        mPrefer16bpp(0)
 {
     init();
 }
@@ -136,6 +137,9 @@ void SurfaceFlinger::init()
 
     property_get("persist.sys.use_dithering", value, "1");
     mUseDithering = atoi(value);
+
+    property_get("persist.sys.prefer_16bpp", value, "1");
+    mPrefer16bpp = atoi(value);
 
     if (mDebugDDMS) {
         DdmConnection::start(getServiceName());
@@ -1557,7 +1561,10 @@ sp<Layer> SurfaceFlinger::createNormalSurface(
 #ifdef NO_RGBX_8888
         format = PIXEL_FORMAT_RGB_565;
 #else
-        format = PIXEL_FORMAT_RGBX_8888;
+        if (mPrefer16bpp)
+           format = PIXEL_FORMAT_RGB_565;
+        else
+           format = PIXEL_FORMAT_RGBX_8888;
 #endif
         break;
     }

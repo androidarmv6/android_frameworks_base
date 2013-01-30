@@ -446,6 +446,7 @@ private:
    volatile     int32_t                     mSecureFrameBuffer;
 
                 int                         mUseDithering;
+                bool                        mPrefer16bpp;
 };
 
 // ---------------------------------------------------------------------------
