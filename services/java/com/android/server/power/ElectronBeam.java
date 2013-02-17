@@ -732,7 +732,7 @@ final class ElectronBeam {
 
                 DisplayInfo displayInfo = mDisplayManager.getDisplayInfo(Display.DEFAULT_DISPLAY);
                 int rotation = (displayInfo.rotation +
-                            (4 - android.os.SystemProperties.getInt("ro.sf.hwrotation", 0) / 90)) % 4;
+                            (android.os.SystemProperties.getInt("ro.sf.hwrotation", 0) / 90)) % 4;
 
                 switch (rotation) {
                     case Surface.ROTATION_0:
