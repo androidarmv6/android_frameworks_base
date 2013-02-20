@@ -224,6 +224,7 @@ public class AudioSystem
     public static final int DEVICE_OUT_ANC_HEADSET = 0x10000;
     public static final int DEVICE_OUT_ANC_HEADPHONE = 0x20000;
     public static final int DEVICE_OUT_PROXY = 0x40000;
+    public static final int DEVICE_OUT_FM = 0x80000;
     public static final int DEVICE_OUT_DEFAULT = DEVICE_BIT_DEFAULT;
     public static final int DEVICE_OUT_FM = 0x8000;
 
