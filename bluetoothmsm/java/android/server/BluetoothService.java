@@ -742,8 +742,10 @@ public class BluetoothService extends IBluetooth.Stub {
      */
     synchronized void shutoffBluetooth() {
         if (mAdapterSdpHandles != null) removeReservedServiceRecordsNative(mAdapterSdpHandles);
-        setBluetoothTetheringNative(false, BluetoothPanProfileHandler.NAP_ROLE,
+        if (SystemProperties.getBoolean("ro.qualcomm.bluetooth.nap", true)) {
+            setBluetoothTetheringNative(false, BluetoothPanProfileHandler.NAP_ROLE,
                 BluetoothPanProfileHandler.NAP_BRIDGE);
+        }
 
         /*
          * disable QC based profiles
@@ -1073,21 +1075,25 @@ public class BluetoothService extends IBluetooth.Stub {
 
         if (R.getBoolean(com.android.internal.R.bool.config_voice_capable)) {
             uuids.add(BluetoothUuid.Handsfree_AG);
-            uuids.add(BluetoothUuid.PBAP_PSE);
+            if (SystemProperties.getBoolean("ro.qualcomm.bluetooth.pbap", true)) {
+                Log.i(TAG, "enabling PBAP services");
+                uuids.add(BluetoothUuid.PBAP_PSE);
+            }
         }
 
         // Add SDP records for profiles maintained by Android userspace
         addReservedSdpRecords(uuids);
 
         if (R.getBoolean(com.android.internal.R.bool.config_bluetooth_default_profiles)) {
-            // Enable profiles maintained by Bluez userspace.
-            setBluetoothTetheringNative(true, BluetoothPanProfileHandler.NAP_ROLE,
+            if (SystemProperties.getBoolean("ro.qualcomm.bluetooth.nap", true)) {
+                setBluetoothTetheringNative(true, BluetoothPanProfileHandler.NAP_ROLE,
                    BluetoothPanProfileHandler.NAP_BRIDGE);
-
+                Log.i(TAG, "enabling NAP services");
+                uuids.add(BluetoothUuid.NAP);
+            }
             // Add SDP records for profiles maintained by Bluez userspace
             uuids.add(BluetoothUuid.AudioSource);
             uuids.add(BluetoothUuid.AvrcpTarget);
-            uuids.add(BluetoothUuid.NAP);
         }
 
         // Cannot cast uuids.toArray directly since ParcelUuid is parcelable
