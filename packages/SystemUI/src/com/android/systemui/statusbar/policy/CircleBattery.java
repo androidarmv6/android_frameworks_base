@@ -269,7 +269,6 @@ public class CircleBattery extends ImageView {
         // if chosen by options, draw percentage text in the middle
         // always skip percentage when 100, so layout doesnt break
         if (mLevel < 100 && mPercentage){
-            mPaintFont.setColor(usePaint.getColor());
             canvas.drawText(Integer.toString(mLevel), mPercentX, mPercentY, mPaintFont);
         }
     }
@@ -311,12 +310,12 @@ public class CircleBattery extends ImageView {
             initSizeMeasureIconHeight();
         }
 
-        mPaintFont.setTextSize(mCircleSize / 2f);
+        mPaintFont.setTextSize(mCircleSize / 1.8f);
 
-        float strokeWidth = mCircleSize / 8.0f;
+        float strokeWidth = mCircleSize / 8f;
         mPaintRed.setStrokeWidth(strokeWidth);
         mPaintSystem.setStrokeWidth(strokeWidth);
-        mPaintGray.setStrokeWidth(strokeWidth / 3.5f);
+        mPaintGray.setStrokeWidth(strokeWidth / 1.45f);
 
         // calculate rectangle for drawArc calls
         int pLeft = getPaddingLeft();
@@ -328,7 +327,7 @@ public class CircleBattery extends ImageView {
         mPaintFont.getTextBounds("99", 0, "99".length(), bounds);
         mPercentX = mCircleSize / 2.0f + getPaddingLeft();
         // the +1 at end of formular balances out rounding issues. works out on all resolutions
-        mPercentY = mCircleSize / 2.0f + (bounds.bottom - bounds.top) / 2.0f - strokeWidth / 2.0f + 1;
+        mPercentY = (mCircleSize / 2.0f + (bounds.bottom - bounds.top) / 2.0f - strokeWidth / 2.0f + 1);
 
         // force new measurement for wrap-content xml tag
         onMeasure(0, 0);
@@ -353,5 +352,6 @@ public class CircleBattery extends ImageView {
                 mCircleSize++;
             //}
         }
+        mCircleSize += 2;
     }
 }
