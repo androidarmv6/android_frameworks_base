@@ -4114,6 +4114,37 @@ public final class ActivityThread {
         }
     }
 
+    /**
+     * hwui.use.blacklist allows to disable the hardware acceleration
+     * to specified applications processes, if files (process names)
+     * are present in /data/local/hwui.deny/
+     */
+    private boolean hwuiForbidden(String processName) {
+
+        boolean useBL = SystemProperties.getBoolean("hwui.use.blacklist", true);
+
+        // Default is allowed
+        boolean blacklisted = false;
+
+        if (!useBL || TextUtils.isEmpty(processName))
+            return blacklisted;
+
+        File hwuiConfig = new File("/data/local/hwui.deny/" + processName);
+        if (hwuiConfig.exists()) {
+            blacklisted = true;
+        }
+
+        hwuiConfig = null;
+
+        // Keep the logs to show process names with "adb logcat | grep listed"
+        if (!blacklisted)
+            Slog.v(TAG, processName + " white listed for hwui");
+        else
+            Slog.d(TAG, processName + " black listed for hwui");
+
+        return blacklisted;
+    }
+
     private void updateDefaultDensity() {
         if (mCurDefaultDisplayDpi != Configuration.DENSITY_DPI_UNDEFINED
                 && mCurDefaultDisplayDpi != DisplayMetrics.DENSITY_DEVICE
@@ -4178,6 +4209,8 @@ public final class ActivityThread {
             if (!ActivityManager.isHighEndGfx()) {
                 HardwareRenderer.disable(false);
             }
+        } else if (hwuiForbidden(data.processName)) {
+            HardwareRenderer.disable(false);
         }
         
         if (mProfiler.profileFd != null) {
