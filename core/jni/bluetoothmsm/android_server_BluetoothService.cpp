@@ -2992,7 +2992,7 @@ static jobjectArray getGattServicePropertiesNative(JNIEnv *env, jobject object, 
 }
 
 static jboolean discoverCharacteristicsNative(JNIEnv *env, jobject object,
-                                              jstring path) {
+                                              jstring path, jstring data) {
    ALOGV("%s", __FUNCTION__);
 #ifdef HAVE_BLUETOOTH
     native_data_t *nat = get_native_data(env, object);
@@ -3002,9 +3002,15 @@ static jboolean discoverCharacteristicsNative(JNIEnv *env, jobject object,
 
     if (nat && eventLoopNat) {
         const char *c_path = env->GetStringUTFChars(path, NULL);
-        int len = env->GetStringLength(path) + 1;
+        const char *c_data = env->GetStringUTFChars(data, NULL);
+
+        int len = env->GetStringLength(path) + env->GetStringLength(data) + 1;
+        int pathLen = env->GetStringLength(path) + 1;
+
         char *context_path = (char *)calloc(len, sizeof(char));
-        strlcpy(context_path, c_path, len);  // for callback
+        strlcpy(context_path, c_path, pathLen);  // for callback
+        strlcat(context_path, c_data, len);
+        ALOGE("%s.. %s\n", __FUNCTION__, context_path);
 
        ALOGV("... Object Path = %s", c_path);
        ALOGE(" %s .. Object Path = %s\n",  __FUNCTION__, c_path);
@@ -3018,6 +3024,7 @@ static jboolean discoverCharacteristicsNative(JNIEnv *env, jobject object,
                                         "DiscoverCharacteristics",
                                         DBUS_TYPE_INVALID);
         env->ReleaseStringUTFChars(path, c_path);
+        env->ReleaseStringUTFChars(path, c_data);
         return ret ? JNI_TRUE : JNI_FALSE;
     }
 #endif
@@ -3330,7 +3337,8 @@ static jobjectArray getCharacteristicPropertiesNative(JNIEnv *env, jobject objec
 }
 
 static jboolean setCharacteristicPropertyNative(JNIEnv *env, jobject object, jstring path,
-                                                jstring key, jbyteArray value, int len, jboolean reliable) {
+                                                jstring key, jstring data, jbyteArray value,
+                                                int len, jboolean reliable) {
 #ifdef HAVE_BLUETOOTH
    ALOGV("%s", __FUNCTION__);
     native_data_t *nat = get_native_data(env, object);
@@ -3345,6 +3353,7 @@ static jboolean setCharacteristicPropertyNative(JNIEnv *env, jobject object, jst
 
         const char *c_key = env->GetStringUTFChars(key, NULL);
         const char *c_path = env->GetStringUTFChars(path, NULL);
+        const char *c_data = env->GetStringUTFChars(data, NULL);
         jbyte *v_ptr = env->GetByteArrayElements(value, NULL);
 
         int sz = env->GetArrayLength(value);
@@ -3361,6 +3370,7 @@ static jboolean setCharacteristicPropertyNative(JNIEnv *env, jobject object, jst
                      "SetProperty!", __FUNCTION__);
                 env->ReleaseStringUTFChars(key, c_key);
                 env->ReleaseStringUTFChars(path, c_path);
+                env->ReleaseStringUTFChars(data, c_data);
                 env->ReleaseByteArrayElements(value, v_ptr, 0);
                 return JNI_FALSE;
             }
@@ -3373,12 +3383,15 @@ static jboolean setCharacteristicPropertyNative(JNIEnv *env, jobject object, jst
             // Setup the callback info
             struct set_characteristic_property_t *prop;
             prop = (set_characteristic_property_t *) calloc(1, sizeof(struct set_characteristic_property_t));
+            prop->path = (char *)calloc(strlen(c_path) + strlen(c_data) + 1, sizeof(char));
 
             prop->path = (char *)calloc(strlen(c_path) + 1, sizeof(char));
             strlcpy(prop->path, c_path, strlen(c_path) + 1);
 
             prop->property = (char *)calloc(strlen(c_key) + 1, sizeof(char));
             strlcpy(prop->property, c_key, strlen(c_key) + 1);
+            strlcat(prop->path, c_data, strlen(c_path)+ strlen(c_data) + 1);
+            ALOGE(" %s .. user data = %s\n",  __FUNCTION__, prop->path);
 
             // Make the call.
             pending = (dbus_async_call_t *)malloc(sizeof(dbus_async_call_t));
@@ -3416,6 +3429,7 @@ static jboolean setCharacteristicPropertyNative(JNIEnv *env, jobject object, jst
                      "SetProperty!", __FUNCTION__);
                 env->ReleaseStringUTFChars(key, c_key);
                 env->ReleaseStringUTFChars(path, c_path);
+                env->ReleaseStringUTFChars(data, c_data);
                 env->ReleaseByteArrayElements(value, v_ptr, 0);
                 return JNI_FALSE;
             }
@@ -3430,6 +3444,7 @@ static jboolean setCharacteristicPropertyNative(JNIEnv *env, jobject object, jst
 
         env->ReleaseStringUTFChars(key, c_key);
         env->ReleaseStringUTFChars(path, c_path);
+        env->ReleaseStringUTFChars(data, c_data);
         env->ReleaseByteArrayElements(value, v_ptr, 0);
 
         return ret ? JNI_TRUE : JNI_FALSE;
@@ -3439,7 +3454,7 @@ static jboolean setCharacteristicPropertyNative(JNIEnv *env, jobject object, jst
 }
 
 static jboolean updateCharacteristicValueNative(JNIEnv *env, jobject object,
-                                                jstring path) {
+                                                jstring path, jstring data) {
    ALOGV("%s", __FUNCTION__);
 #ifdef HAVE_BLUETOOTH
     native_data_t *nat = get_native_data(env, object);
@@ -3449,11 +3464,15 @@ static jboolean updateCharacteristicValueNative(JNIEnv *env, jobject object,
 
     if (nat && eventLoopNat) {
         const char *c_path = env->GetStringUTFChars(path, NULL);
-        int len = env->GetStringLength(path) + 1;
+        const char *c_data = env->GetStringUTFChars(data, NULL);
+        int len = env->GetStringLength(path) + env->GetStringLength(data) + 1;
+        int pathLen = env->GetStringLength(path) + 1;
         char *context_path = (char *)calloc(len, sizeof(char));
-        strlcpy(context_path, c_path, len);  // for callback
+        strlcpy(context_path, c_path, pathLen);  // for callback
+        strlcat(context_path, c_data, len);
 
        ALOGV("... Object Path = %s", c_path);
+       ALOGE(" %s .. user data = %s\n",  __FUNCTION__, context_path);
 
         bool ret = dbus_func_args_async(env, nat->conn, -1,
                                         onUpdateCharacteristicValueResult,
@@ -3464,6 +3483,7 @@ static jboolean updateCharacteristicValueNative(JNIEnv *env, jobject object,
                                         "UpdateValue",
                                         DBUS_TYPE_INVALID);
         env->ReleaseStringUTFChars(path, c_path);
+        env->ReleaseStringUTFChars(data, c_data);
 
         return ret ? JNI_TRUE : JNI_FALSE;
     }
@@ -3743,15 +3763,15 @@ static JNINativeMethod sMethods[] = {
     {"discoverPrimaryServicesNative", "(Ljava/lang/String;)Z", (void *)discoverPrimaryServicesNative},
     {"createLeDeviceNative", "(Ljava/lang/String;)Ljava/lang/String;", (void*)createLeDeviceNative},
     {"getGattServicePropertiesNative", "(Ljava/lang/String;)[Ljava/lang/Object;", (void*)getGattServicePropertiesNative},
-    {"discoverCharacteristicsNative", "(Ljava/lang/String;)Z", (void*)discoverCharacteristicsNative},
+    {"discoverCharacteristicsNative", "(Ljava/lang/String;Ljava/lang/String;)Z", (void*)discoverCharacteristicsNative},
     {"gattConnectCancelNative", "(Ljava/lang/String;)Z", (void *)gattConnectCancelNative},
     {"gattConnectNative", "(Ljava/lang/String;IIIIIIIIIII)I", (void *)gattConnectNative},
     {"gattLeConnectCancelNative", "(Ljava/lang/String;)Z", (void *)gattLeConnectCancelNative},
     {"gattLeConnectNative", "(Ljava/lang/String;IIIIIIIIIII)I", (void *)gattLeConnectNative},
     {"gattLeDisconnectRequestNative", "(Ljava/lang/String;)Z", (void *)gattLeDisconnectRequestNative},
-    {"updateCharacteristicValueNative", "(Ljava/lang/String;)Z", (void*)updateCharacteristicValueNative},
+    {"updateCharacteristicValueNative", "(Ljava/lang/String;Ljava/lang/String;)Z", (void*)updateCharacteristicValueNative},
     {"getCharacteristicPropertiesNative", "(Ljava/lang/String;)[Ljava/lang/Object;", (void*)getCharacteristicPropertiesNative},
-    {"setCharacteristicPropertyNative", "(Ljava/lang/String;Ljava/lang/String;[BIZ)Z", (void*)setCharacteristicPropertyNative},
+    {"setCharacteristicPropertyNative", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;[BIZ)Z", (void*)setCharacteristicPropertyNative},
     {"registerCharacteristicsWatcherNative", "(Ljava/lang/String;)Z", (void*)registerCharacteristicsWatcherNative},
     {"deregisterCharacteristicsWatcherNative", "(Ljava/lang/String;)Z", (void*)deregisterCharacteristicsWatcherNative},
     {"disconnectGattNative", "(Ljava/lang/String;)Z", (void*)disconnectGattNative},
