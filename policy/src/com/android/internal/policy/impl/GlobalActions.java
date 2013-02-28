@@ -167,7 +167,8 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
             if (mUiContext != null) {
                 mUiContext = null;
             }
-            mDialog.dismiss();
+            mDialog.hide();
+            mDialog.cancel();
             mDialog = null;
             mDialog = createDialog();
             // Show delayed, so that the dismiss of the previous dialog completes
