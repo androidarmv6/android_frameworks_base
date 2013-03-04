@@ -232,7 +232,7 @@ public class QuickSettingsController {
             qs.setupQuickSettingsTile();
             mQuickSettingsTiles.add(qs);
         }
-        if (Settings.System.getInt(resolver, Settings.System.QS_DYNAMIC_IME, 1) == 1) {
+        if (deviceSupportsImeSwitcher(mContext) && Settings.System.getInt(resolver, Settings.System.QS_DYNAMIC_IME, 1) == 1) {
             mIMETile = new InputMethodTile(mContext, inflater, mContainerView, this);
             mIMETile.setupQuickSettingsTile();
             mQuickSettingsTiles.add(mIMETile);
