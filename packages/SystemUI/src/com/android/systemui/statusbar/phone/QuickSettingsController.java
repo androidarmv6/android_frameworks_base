@@ -42,6 +42,7 @@ import static com.android.internal.util.cm.QSConstants.TILE_WIFI;
 import static com.android.internal.util.cm.QSConstants.TILE_WIFIAP;
 import static com.android.internal.util.cm.QSConstants.TILE_WIMAX;
 import static com.android.internal.util.cm.QSUtils.deviceSupportsBluetooth;
+import static com.android.internal.util.cm.QSUtils.deviceSupportsImeSwitcher;
 import static com.android.internal.util.cm.QSUtils.deviceSupportsTelephony;
 import static com.android.internal.util.cm.QSUtils.deviceSupportsUsbTether;
 import static com.android.internal.util.cm.QSUtils.systemProfilesEnabled;
@@ -235,6 +236,11 @@ public class QuickSettingsController {
             mIMETile = new InputMethodTile(mContext, inflater, mContainerView, this);
             mIMETile.setupQuickSettingsTile();
             mQuickSettingsTiles.add(mIMETile);
+        }
+        if (deviceSupportsImeSwitcher(mContext) && Settings.System.getInt(resolver, Settings.System.QS_DYNAMIC_IME, 1) == 1) {
+            QuickSettingsTile qs = new InputMethodTile(mContext, inflater, mContainerView, this);
+            qs.setupQuickSettingsTile();
+            mQuickSettingsTiles.add(qs);
         }
         if (deviceSupportsUsbTether(mContext) && Settings.System.getInt(resolver, Settings.System.QS_DYNAMIC_USBTETHER, 1) == 1) {
             QuickSettingsTile qs = new UsbTetherTile(mContext, inflater, mContainerView, this);
