@@ -1,3 +1,4 @@
+
 /*
  * Copyright (C) 2012 The Android Open Source Project
  *
@@ -236,11 +237,6 @@ public class QuickSettingsController {
             mIMETile = new InputMethodTile(mContext, inflater, mContainerView, this);
             mIMETile.setupQuickSettingsTile();
             mQuickSettingsTiles.add(mIMETile);
-        }
-        if (deviceSupportsImeSwitcher(mContext) && Settings.System.getInt(resolver, Settings.System.QS_DYNAMIC_IME, 1) == 1) {
-            QuickSettingsTile qs = new InputMethodTile(mContext, inflater, mContainerView, this);
-            qs.setupQuickSettingsTile();
-            mQuickSettingsTiles.add(qs);
         }
         if (deviceSupportsUsbTether(mContext) && Settings.System.getInt(resolver, Settings.System.QS_DYNAMIC_USBTETHER, 1) == 1) {
             QuickSettingsTile qs = new UsbTetherTile(mContext, inflater, mContainerView, this);
