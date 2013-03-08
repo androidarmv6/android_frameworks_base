@@ -21,7 +21,6 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothA2dp;
-import android.bluetooth.BluetoothClass;
 import android.bluetooth.BluetoothHeadset;
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
@@ -143,13 +142,6 @@ class BluetoothBondState {
             if(pairState.equals("true")) {
                 Log.d(TAG, "The paired state of the remote device is true");
                 mState.put(address.toUpperCase(), BluetoothDevice.BOND_BONDED);
-            } else {
-                BluetoothClass btClass = new BluetoothClass(mService.getRemoteClass(address));
-                int btDeviceClass = btClass.getDeviceClass();
-                if (btDeviceClass == BluetoothClass.Device.PERIPHERAL_POINTING) {
-                    Log.d(TAG, "Its a HID pointing device, updating bond state as bonded");
-                    mState.put(address.toUpperCase(), BluetoothDevice.BOND_BONDED);
-                }
             }
         }
     }
