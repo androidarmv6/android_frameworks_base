@@ -120,9 +120,11 @@ final class BluetoothGattProfileHandler {
                 boolean isNew;
 
                 /* Nothing to do, just return success for status */
-                if (mAppConfigs.containsKey(path))
+                if (mAppConfigs.containsKey(path)) {
                     callGattApplicationStatusCallback(config,
                            BluetoothGatt.GATT_CONFIG_REGISTRATION_SUCCESS);
+                    break;
+                }
 
                 if (mRegisteredServers.isEmpty()) {
                     String[] servers = null;
