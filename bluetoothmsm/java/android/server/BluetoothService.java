@@ -1120,7 +1120,7 @@ public class BluetoothService extends IBluetooth.Stub {
      * for adapter comes in with UUID property.
      * @param uuidsThe uuids of adapter as reported by Bluez.
      */
-    /*package*/ synchronized void updateBluetoothState(String uuids) {
+    /*package*/ void updateBluetoothState(String uuids) {
         ParcelUuid[] adapterUuids = convertStringToParcelUuid(uuids);
 
         if (mAdapterUuids != null &&
