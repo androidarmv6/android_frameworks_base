@@ -331,6 +331,9 @@ public class BluetoothA2dpService extends IBluetoothA2dp.Stub {
                 case BluetoothAdapter.STATE_TURNING_OFF:
                     onBluetoothDisable();
                     break;
+                case BluetoothAdapter.STATE_OFF:
+                    checkA2dpStateAtBluetoothDisable();
+                    break;
                 }
             } else if (action.equals(BluetoothDevice.ACTION_ACL_DISCONNECTED)) {
                 synchronized (this) {
@@ -933,6 +936,21 @@ public class BluetoothA2dpService extends IBluetoothA2dp.Stub {
             }
         }
 
+    }
+
+    private synchronized void checkA2dpStateAtBluetoothDisable() {
+        if (!mAudioDevices.isEmpty()) {
+            BluetoothDevice[] devices = new BluetoothDevice[mAudioDevices.size()];
+            devices = mAudioDevices.keySet().toArray(devices);
+            for (BluetoothDevice device : devices) {
+                int state = getConnectionState(device);
+                if (state == BluetoothA2dp.STATE_DISCONNECTING) {
+                        handleSinkStateChange(device, BluetoothA2dp.STATE_DISCONNECTING,
+                                              BluetoothA2dp.STATE_DISCONNECTED);
+                        mAudioDevices.clear();
+                }
+            }
+        }
     }
 
     private synchronized boolean isConnectSinkFeasible(BluetoothDevice device) {
