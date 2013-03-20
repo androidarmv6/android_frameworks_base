@@ -1213,6 +1213,17 @@ public class BluetoothA2dpService extends IBluetoothA2dp.Stub {
 
         BluetoothDevice device = mAdapter.getRemoteDevice(address);
 
+        log("Property change recieved for device: " + address);
+
+        if (mPlayingA2dpDevice != null && device != null) {
+            // Do not process the command if sink property
+            // gets changed for some other a2dp device
+            if (!device.equals(mPlayingA2dpDevice)) {
+                log("Property change recieved for a device which is not streaming hence exiting");
+                return;
+            }
+        }
+
         if (name.equals(PROPERTY_STATE)) {
             int state = convertBluezSinkStringToState(propValues[1]);
             log("A2DP: onSinkPropertyChanged newState is: " + state + "mPlayingA2dpDevice: " + mPlayingA2dpDevice);
