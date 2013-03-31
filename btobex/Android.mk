@@ -8,4 +8,6 @@ LOCAL_MODULE:= javax.btobex
 
 LOCAL_MODULE_TAGS := optional
 
+LOCAL_OVERRIDES_PACKAGES := javax.obex
+
 include $(BUILD_JAVA_LIBRARY)
