@@ -44,6 +44,7 @@ import static com.android.internal.util.cm.QSConstants.TILE_WIFI;
 import static com.android.internal.util.cm.QSConstants.TILE_WIFIAP;
 import static com.android.internal.util.cm.QSConstants.TILE_WIMAX;
 import static com.android.internal.util.cm.QSUtils.deviceSupportsBluetooth;
+import static com.android.internal.util.cm.QSUtils.deviceSupportsDockBattery;
 import static com.android.internal.util.cm.QSUtils.deviceSupportsImeSwitcher;
 import static com.android.internal.util.cm.QSUtils.deviceSupportsTelephony;
 import static com.android.internal.util.cm.QSUtils.deviceSupportsUsbTether;
@@ -70,6 +71,7 @@ import com.android.systemui.quicksettings.BatteryTile;
 import com.android.systemui.quicksettings.BluetoothTile;
 import com.android.systemui.quicksettings.BrightnessTile;
 import com.android.systemui.quicksettings.BugReportTile;
+import com.android.systemui.quicksettings.DockBatteryTile;
 import com.android.systemui.quicksettings.GPSTile;
 import com.android.systemui.quicksettings.InputMethodTile;
 import com.android.systemui.quicksettings.LteTile;
@@ -160,6 +162,7 @@ public class QuickSettingsController {
         Log.i(TAG, "Tiles list: " + tiles);
 
         // Split out the tile names and add to the list
+        boolean dockBatteryLoaded = false;
         for (String tile : tiles.split("\\|")) {
             QuickSettingsTile qs = null;
             if (tile.equals(TILE_USER)) {
@@ -216,6 +219,12 @@ public class QuickSettingsController {
             if (qs != null) {
                 qs.setupQuickSettingsTile();
                 mQuickSettingsTiles.add(qs);
+
+                // Add dock battery beside main battery when possible
+                if (qs instanceof BatteryTile) {
+                    loadDockBatteryTile(resolver, inflater);
+                    dockBatteryLoaded = true;
+                }
             }
         }
 
@@ -232,6 +241,9 @@ public class QuickSettingsController {
             qs.setupQuickSettingsTile();
             mQuickSettingsTiles.add(qs);
         }
+        if (!dockBatteryLoaded) {
+            loadDockBatteryTile(resolver, inflater);
+        }
         if (Settings.System.getInt(resolver, Settings.System.QS_DYNAMIC_WIFI, 1) == 1) {
             QuickSettingsTile qs = new WiFiDisplayTile(mContext, inflater, mContainerView, this);
             qs.setupQuickSettingsTile();
@@ -244,6 +256,14 @@ public class QuickSettingsController {
         }
         if (deviceSupportsUsbTether(mContext) && Settings.System.getInt(resolver, Settings.System.QS_DYNAMIC_USBTETHER, 1) == 1) {
             QuickSettingsTile qs = new UsbTetherTile(mContext, inflater, mContainerView, this);
+            qs.setupQuickSettingsTile();
+            mQuickSettingsTiles.add(qs);
+        }
+    }
+
+    private void loadDockBatteryTile(final ContentResolver resolver, final LayoutInflater inflater) {
+        if (deviceSupportsDockBattery(mContext) && Settings.System.getInt(resolver, Settings.System.QS_DYNAMIC_DOCK_BATTERY, 1) == 1) {
+            QuickSettingsTile qs = new DockBatteryTile(mContext, inflater, mContainerView, this);
             qs.setupQuickSettingsTile();
             mQuickSettingsTiles.add(qs);
         }
