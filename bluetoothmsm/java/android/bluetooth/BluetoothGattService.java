@@ -20,6 +20,8 @@ import android.os.Handler;
 import android.os.ParcelUuid;
 import android.os.RemoteException;
 import android.util.Log;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import java.io.IOException;
 
@@ -63,7 +65,7 @@ public class BluetoothGattService {
 
     private final ServiceHelper mHelper;
 
-    private final Handler mRemoteGattServiceHandler;
+    private Timer timer = null;
 
     public BluetoothGattService(BluetoothDevice device, ParcelUuid uuid, String path,
                                 IBluetoothGattProfile callback) {
@@ -80,15 +82,9 @@ public class BluetoothGattService {
         mHelper = new ServiceHelper();
         mService = BluetoothDevice.getService();
 
-        mRemoteGattServiceHandler = new Handler();
-        boolean hasGattServiceStarted = mRemoteGattServiceHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                Log.d(TAG, "Inside run for disc char");
-                mHelper.startRemoteGattService();
-            }
-        }, 1000);
-        Log.d(TAG, "Remote Gatt service started : " + hasGattServiceStarted);
+        timer = new Timer();
+        timer.schedule(new startGattServiceTask(), 1000);
+        Log.d(TAG, "Remote Gatt service started ::");
     }
 
     public boolean gattConnect(byte prohibitRemoteChg,
@@ -419,6 +415,13 @@ public class BluetoothGattService {
             addCharacteristicProperties(path, properties);
         }
     }
+    class startGattServiceTask extends TimerTask {
+        @Override
+        public void run() {
+            Log.d(TAG, "Inside startGattServiceTask");
+            mHelper.startRemoteGattService();
+        }
+    };
 
     /**
      * Helper to perform Service Characteristic discovery
