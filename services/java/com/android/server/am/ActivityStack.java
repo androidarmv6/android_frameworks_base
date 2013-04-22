@@ -58,6 +58,8 @@ import android.os.ServiceManager;
 import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.os.UserHandle;
+import android.provider.Settings;
+import android.util.DisplayMetrics;
 import android.util.EventLog;
 import android.util.Log;
 import android.util.Slog;
@@ -1537,7 +1539,7 @@ final class ActivityStack {
         
         // We need to start pausing the current activity so the top one
         // can be resumed...
-        if (mResumedActivity != null) {
+        if (mResumedActivity != null && (pauseActiveAppWhenUsingHalo() || !next.floatingWindow)) {
             if (DEBUG_SWITCH) Slog.v(TAG, "Skip resume: need to start pausing");
             // At this point we want to put the upcoming activity's process
             // at the top of the LRU list, since we know we will be needing it
@@ -1616,7 +1618,7 @@ final class ActivityStack {
             if (prev.finishing) {
                 if (DEBUG_TRANSITION) Slog.v(TAG,
                         "Prepare close transition: prev=" + prev);
-                if (mNoAnimActivities.contains(prev)) {
+                if (mNoAnimActivities.contains(prev) || next.floatingWindow) {
                     mService.mWindowManager.prepareAppTransition(
                             WindowManagerPolicy.TRANSIT_NONE, false);
                 } else {
@@ -1629,7 +1631,7 @@ final class ActivityStack {
             } else {
                 if (DEBUG_TRANSITION) Slog.v(TAG,
                         "Prepare open transition: prev=" + prev);
-                if (mNoAnimActivities.contains(next)) {
+                if (mNoAnimActivities.contains(next) || next.floatingWindow) {
                     noAnim = true;
                     mService.mWindowManager.prepareAppTransition(
                             WindowManagerPolicy.TRANSIT_NONE, false);
@@ -1761,7 +1763,7 @@ final class ActivityStack {
                 if (!next.hasBeenLaunched) {
                     next.hasBeenLaunched = true;
                 } else {
-                    if (SHOW_APP_STARTING_PREVIEW && mMainStack) {
+                    if (SHOW_APP_STARTING_PREVIEW && mMainStack && !next.floatingWindow) {
                         mService.mWindowManager.setAppStartingWindow(
                                 next.appToken, next.packageName, next.theme,
                                 mService.compatibilityInfoForPackageLocked(
@@ -1795,7 +1797,7 @@ final class ActivityStack {
             if (!next.hasBeenLaunched) {
                 next.hasBeenLaunched = true;
             } else {
-                if (SHOW_APP_STARTING_PREVIEW) {
+                if (SHOW_APP_STARTING_PREVIEW && !next.floatingWindow) {
                     mService.mWindowManager.setAppStartingWindow(
                             next.appToken, next.packageName, next.theme,
                             mService.compatibilityInfoForPackageLocked(
@@ -1837,6 +1839,38 @@ final class ActivityStack {
                     ActivityManagerService.POST_PRIVACY_NOTIFICATION_MSG, next);
             msg.sendToTarget();
             mPrivacyGuardPackageName = next.packageName;
+        }
+    }
+
+    public void pf(String tag, ActivityRecord r) {
+        if (r == null) return;
+        if (r.intent == null) return;
+
+        int f = r.intent.getFlags();
+
+        android.util.Log.d("PARANOID." + tag, r.packageName + "  intent=" + r.intent.toString() + " top=" + r.topIntent);
+        if ((f & Intent.FLAG_FLOATING_WINDOW) == Intent.FLAG_FLOATING_WINDOW) android.util.Log.d("PARANOID", "  FLAG_FLOATING_WINDOW");
+        if ((f & Intent.FLAG_ACTIVITY_TASK_ON_HOME) == Intent.FLAG_ACTIVITY_TASK_ON_HOME) android.util.Log.d("PARANOID", "  FLAG_ACTIVITY_TASK_ON_HOME");
+        if ((f & Intent.FLAG_ACTIVITY_SINGLE_TOP) == Intent.FLAG_ACTIVITY_SINGLE_TOP) android.util.Log.d("PARANOID", "  FLAG_ACTIVITY_SINGLE_TOP");
+        if ((f & Intent.FLAG_ACTIVITY_CLEAR_TOP) == Intent.FLAG_ACTIVITY_CLEAR_TOP) android.util.Log.d("PARANOID", "  FLAG_ACTIVITY_CLEAR_TOP");
+        if ((f & Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT) == Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT) android.util.Log.d("PARANOID", "  FLAG_ACTIVITY_BROUGHT_TO_FRONT");
+        if ((f & Intent.FLAG_ACTIVITY_CLEAR_TASK) == Intent.FLAG_ACTIVITY_CLEAR_TASK) android.util.Log.d("PARANOID", "  FLAG_ACTIVITY_CLEAR_TASK");
+        if ((f & Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET) == Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET) android.util.Log.d("PARANOID", "  FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET");
+        if ((f & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) == Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) android.util.Log.d("PARANOID", "  FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY");
+        if ((f & Intent.FLAG_ACTIVITY_NEW_TASK) == Intent.FLAG_ACTIVITY_NEW_TASK) android.util.Log.d("PARANOID", "  FLAG_ACTIVITY_NEW_TASK");
+        if ((f & Intent.FLAG_ACTIVITY_NO_USER_ACTION) == Intent.FLAG_ACTIVITY_NO_USER_ACTION) android.util.Log.d("PARANOID", "  FLAG_ACTIVITY_NO_USER_ACTION");
+        if ((f & Intent.FLAG_ACTIVITY_PREVIOUS_IS_TOP) == Intent.FLAG_ACTIVITY_PREVIOUS_IS_TOP) android.util.Log.d("PARANOID", "  FLAG_ACTIVITY_PREVIOUS_IS_TOP");
+        if ((f & Intent.FLAG_ACTIVITY_REORDER_TO_FRONT) == Intent.FLAG_ACTIVITY_REORDER_TO_FRONT) android.util.Log.d("PARANOID", "  FLAG_ACTIVITY_REORDER_TO_FRONT");
+        if ((f & Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED) == Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED) android.util.Log.d("PARANOID", "  FLAG_ACTIVITY_RESET_TASK_IF_NEEDED");
+        if ((f & Intent.FLAG_FROM_BACKGROUND) == Intent.FLAG_FROM_BACKGROUND) android.util.Log.d("PARANOID", "  FLAG_FROM_BACKGROUND");
+        if ((f & Intent.FLAG_ACTIVITY_NO_HISTORY) == Intent.FLAG_ACTIVITY_NO_HISTORY) android.util.Log.d("PARANOID", "  FLAG_ACTIVITY_NO_HISTORY");
+
+        if (r.stack == null) return;
+        if (r.stack.mHistory == null) return;
+        if (r.stack.mHistory.size() == 0) return;        
+        for (int i = 0; i < r.stack.mHistory.size(); i++) {
+            ActivityRecord hr = r.stack.mHistory.get(i);
+            android.util.Log.d("PARANOID", "  --- " + i + ": " + hr.packageName + " new="+ hr.newTask + " floating=" + hr.floatingWindow + " top=" + hr.topIntent);
         }
     }
 
@@ -1922,12 +1956,13 @@ final class ActivityStack {
             }
             if (DEBUG_TRANSITION) Slog.v(TAG,
                     "Prepare open transition: starting " + r);
-            if ((r.intent.getFlags()&Intent.FLAG_ACTIVITY_NO_ANIMATION) != 0) {
+
+            if (((r.intent.getFlags()&Intent.FLAG_ACTIVITY_NO_ANIMATION) != 0) || (r.floatingWindow && !r.topIntent)) {
                 mService.mWindowManager.prepareAppTransition(
                         WindowManagerPolicy.TRANSIT_NONE, keepCurTransition);
                 mNoAnimActivities.add(r);
             } else {
-                mService.mWindowManager.prepareAppTransition(newTask
+                mService.mWindowManager.prepareAppTransition(newTask && !r.floatingWindow
                         ? WindowManagerPolicy.TRANSIT_TASK_OPEN
                         : WindowManagerPolicy.TRANSIT_ACTIVITY_OPEN, keepCurTransition);
                 mNoAnimActivities.remove(r);
@@ -1949,7 +1984,7 @@ final class ActivityStack {
                     doShow = topRunningNonDelayedActivityLocked(null) == r;
                 }
             }
-            if (SHOW_APP_STARTING_PREVIEW && doShow) {
+            if (SHOW_APP_STARTING_PREVIEW && doShow && !r.floatingWindow) {
                 // Figure out if we are transitioning from another activity that is
                 // "has the same starting icon" as the next one.  This allows the
                 // window manager to keep the previous window it had previously
@@ -2520,6 +2555,12 @@ final class ActivityStack {
 
         mPm.cpuBoost(1500000);
 
+        // This is where we hook special purpose flags formultiwindow application
+        if (intent != null && (intent.getFlags()&Intent.FLAG_MULTI_WINDOW) == Intent.FLAG_MULTI_WINDOW) {
+            intent.setFlags(intent.getFlags() & ~Intent.FLAG_ACTIVITY_TASK_ON_HOME);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY|Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+        }
+
         ProcessRecord callerApp = null;
         if (caller != null) {
             callerApp = mService.getRecordForAppLocked(caller);
@@ -2708,9 +2749,12 @@ final class ActivityStack {
         if ((launchFlags &
                 (Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_TASK_ON_HOME))
                 == (Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_TASK_ON_HOME)) {
-            // Caller wants to appear on home activity, so before starting
-            // their own activity we will bring home to the front.
-            moveHomeToFrontLocked();
+            boolean floating = (launchFlags&Intent.FLAG_FLOATING_WINDOW) == Intent.FLAG_FLOATING_WINDOW;
+            if (!floating) {
+                // Caller wants to appear on home activity, so before starting
+                // their own activity we will bring home to the front.
+                moveHomeToFrontLocked();
+            }
         }
     }
 
@@ -2773,7 +2817,8 @@ final class ActivityStack {
             launchFlags |= Intent.FLAG_ACTIVITY_NEW_TASK;
         }
 
-        if (r.resultTo != null && (launchFlags&Intent.FLAG_ACTIVITY_NEW_TASK) != 0) {
+        if (r.resultTo != null && (launchFlags&Intent.FLAG_ACTIVITY_NEW_TASK) != 0 &&
+                (launchFlags&Intent.FLAG_FLOATING_WINDOW) == 0) {
             // For whatever reason this activity is being launched into a new
             // task...  yet the caller has requested a result back.  Well, that
             // is pretty messed up, so instead immediately send back a cancel
@@ -3316,6 +3361,11 @@ final class ActivityStack {
         try {
             synchronized (mService) {
 
+                // we must resolve if the last intent in the stack is floating to give the flag to the previous
+                boolean floating = false;
+                if (intents.length > 0) {
+                    floating = (intents[intents.length - 1].getFlags()&Intent.FLAG_FLOATING_WINDOW) == Intent.FLAG_FLOATING_WINDOW;
+                }
                 for (int i=0; i<intents.length; i++) {
                     Intent intent = intents[i];
                     if (intent == null) {
@@ -3342,6 +3392,10 @@ final class ActivityStack {
                             & ApplicationInfo.FLAG_CANT_SAVE_STATE) != 0) {
                         throw new IllegalArgumentException(
                                 "FLAG_CANT_SAVE_STATE not supported here");
+                    }
+
+                    if (floating) {
+                        intent.addFlags(Intent.FLAG_FLOATING_WINDOW);
                     }
 
                     Bundle theseOptions;
@@ -3850,7 +3904,7 @@ final class ActivityStack {
                     || (mHistory.get(index-1)).task != r.task;
             if (DEBUG_TRANSITION) Slog.v(TAG,
                     "Prepare close transition: finishing " + r);
-            mService.mWindowManager.prepareAppTransition(endTask
+            mService.mWindowManager.prepareAppTransition(endTask && !r.floatingWindow
                     ? WindowManagerPolicy.TRANSIT_TASK_CLOSE
                     : WindowManagerPolicy.TRANSIT_ACTIVITY_CLOSE, false);
     
@@ -4336,7 +4390,7 @@ final class ActivityStack {
         if (top < 0 || (mHistory.get(top)).task.taskId == task) {
             // nothing to do!
             if (reason != null &&
-                    (reason.intent.getFlags()&Intent.FLAG_ACTIVITY_NO_ANIMATION) != 0) {
+                    ((reason.intent.getFlags()&Intent.FLAG_ACTIVITY_NO_ANIMATION) != 0 || reason.floatingWindow)) {
                 ActivityOptions.abort(options);
             } else {
                 updateTransitLocked(WindowManagerPolicy.TRANSIT_TASK_TO_FRONT, options);
@@ -4375,7 +4429,7 @@ final class ActivityStack {
         if (DEBUG_TRANSITION) Slog.v(TAG,
                 "Prepare to front transition: task=" + tr);
         if (reason != null &&
-                (reason.intent.getFlags()&Intent.FLAG_ACTIVITY_NO_ANIMATION) != 0) {
+                ((reason.intent.getFlags()&Intent.FLAG_ACTIVITY_NO_ANIMATION) != 0 || reason.floatingWindow)) {
             mService.mWindowManager.prepareAppTransition(
                     WindowManagerPolicy.TRANSIT_NONE, false);
             ActivityRecord r = topRunningActivityLocked(null);
@@ -4468,7 +4522,7 @@ final class ActivityStack {
         }
 
         if (reason != null &&
-                (reason.intent.getFlags()&Intent.FLAG_ACTIVITY_NO_ANIMATION) != 0) {
+                ((reason.intent.getFlags()&Intent.FLAG_ACTIVITY_NO_ANIMATION) != 0 || reason.floatingWindow)) {
             mService.mWindowManager.prepareAppTransition(
                     WindowManagerPolicy.TRANSIT_NONE, false);
             ActivityRecord r = topRunningActivityLocked(null);
@@ -4788,7 +4842,13 @@ final class ActivityStack {
 
         return true;
     }
-    
+
+    private boolean pauseActiveAppWhenUsingHalo() {
+        int isLowRAM = (ActivityManager.isLargeRAM()) ? 0 : 1;
+        return Settings.System.getInt(mContext.getContentResolver(),
+                Settings.System.HALO_PAUSE, isLowRAM) == 1;
+    }
+
     public void dismissKeyguardOnNextActivityLocked() {
         mDismissKeyguardOnNextActivity = true;
     }
