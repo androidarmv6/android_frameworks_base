@@ -168,11 +168,14 @@
                 android:layout_height="0dp"
                 />
 
-            <FrameLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_vertical"
-                >
+            <RelativeLayout
+            	android:id="@+id/quick_buttons"
+            	android:layout_width="wrap_content"
+            	android:layout_height="wrap_content"
+            	android:layout_alignParentTop="true"
+            	android:layout_alignParentRight="true"
+            	android:paddingRight="20dp"
+            	android:paddingTop="15dp">
 
                 <ImageView
                     android:id="@+id/settings_button"
@@ -190,7 +193,7 @@
                     android:visibility="invisible"
                     android:contentDescription="@string/accessibility_notifications_button"
                     />
-            </FrameLayout>
+            </RelativeLayout>
 
         </TableRow>
     </TableLayout>
@@ -214,7 +217,7 @@
             android:textAppearance="@style/TextAppearance.StatusBar.Expanded.Clock"
             android:clickable="true"
             />
-    
+
         <com.android.systemui.statusbar.policy.DateView
             android:id="@+id/date"
             android:layout_width="wrap_content"
@@ -230,12 +233,26 @@
             android:layout_weight="1"
             />
 
+        <ImageView android:id="@+id/halo_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toLeftOf="@+id/settings_button"
+            android:paddingTop="14dp"
+            android:layout_alignParentTop="true"
+            android:paddingRight="15dp"
+            android:src="@drawable/ic_notify_halo_normal"
+            android:contentDescription="@string/accessibility_halo" />
+            
         <ImageView android:id="@+id/clear_all_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:scaleType="center"
-            android:src="@drawable/ic_notify_clear"
-            android:contentDescription="@string/accessibility_clear_all"
-            />
+            android:layout_toLeftOf="@+id/halo_button"
+            android:paddingTop="14dp"
+            android:layout_alignParentTop="true"
+            android:paddingRight="15dp"
+            android:src="@drawable/ic_notify_clear_normal"
+            android:contentDescription="@string/accessibility_clear_all"/>
+
     </LinearLayout>
+
 </com.android.systemui.statusbar.tablet.NotificationPanelTitle>
