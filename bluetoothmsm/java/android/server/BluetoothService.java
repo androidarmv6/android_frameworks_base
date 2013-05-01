@@ -721,7 +721,7 @@ public class BluetoothService extends IBluetooth.Stub {
         mAdapterConnectionState = BluetoothAdapter.STATE_DISCONNECTED;
         mAdapterUuids = null;
         mAdapterSdpHandles = null;
-        usedSrvIds = null;
+        usedSrvIds.clear();
 
         // Log bluetooth off to battery stats.
         long ident = Binder.clearCallingIdentity();
@@ -759,7 +759,7 @@ public class BluetoothService extends IBluetooth.Stub {
         disableSAP();
         disableMAP();
         tearDownNativeDataNative();
-        usedSrvIds = null;
+        usedSrvIds.clear();
     }
 
     /**
