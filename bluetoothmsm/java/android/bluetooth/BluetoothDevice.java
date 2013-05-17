@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2009 The Android Open Source Project
- * Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2011-2013, The Linux Foundation. All rights reserved.
+ * Not a Contribution.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -244,6 +245,12 @@ public final class BluetoothDevice implements Parcelable {
      * #ACTION_FOUND} and {@link #ACTION_CLASS_CHANGED} intents.
      */
     public static final String EXTRA_CLASS = "android.bluetooth.device.extra.CLASS";
+
+    /** @hide */
+    public static final String EXTRA_VID = "android.bluetooth.device.extra.VID";
+
+    /** @hide */
+    public static final String EXTRA_PID = "android.bluetooth.device.extra.PID";
 
     /**
      * Used as an int extra field in {@link #ACTION_BOND_STATE_CHANGED} intents.
