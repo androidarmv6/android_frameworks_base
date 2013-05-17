@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2008 The Android Open Source Project
- * Copyright (c) 2010-2012 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2010-2013 The Linux Foundation. All rights reserved.
+ * Not a Contribution.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -239,7 +240,25 @@ class BluetoothEventLoop {
         String name = deviceProperties.getProperty(address, "Name");
         String addr = deviceProperties.getProperty(address, "Address");
         String uuids = deviceProperties.getProperty(address, "UUIDs");
+        String vid = deviceProperties.getProperty(address, "VID");
+        String pid = deviceProperties.getProperty(address, "PID");
         short rssiValue;
+
+        int vidValue = 0;
+        int pidValue = 0;
+
+        log("vid: " + vid + " pid: " + pid);
+
+        if (vid != null) {
+            vidValue = Integer.valueOf(vid).intValue();
+        }
+
+        if (pid != null) {
+            pidValue = Integer.valueOf(pid).intValue();
+        }
+
+        log("addDevice:: vidValue: " + vidValue + " pidValue: " + pidValue);
+
         // For incoming connections, we don't get the RSSI value. Use a default of MIN_VALUE.
         // If we accept the pairing, we will automatically show it at the top of the list.
         if (rssi != null) {
@@ -254,6 +273,10 @@ class BluetoothEventLoop {
                     new BluetoothClass(Integer.valueOf(classValue)));
             intent.putExtra(BluetoothDevice.EXTRA_RSSI, rssiValue);
             intent.putExtra(BluetoothDevice.EXTRA_NAME, name);
+            if ((vidValue != 0) || (pidValue != 0)) { /* EIR contains valid vid / pid */
+                intent.putExtra(BluetoothDevice.EXTRA_VID, vidValue);
+                intent.putExtra(BluetoothDevice.EXTRA_PID, pidValue);
+            }
             if(uuids != null) {
                 intent.putExtra(BluetoothDevice.EXTRA_UUIDS, uuids);
             }
