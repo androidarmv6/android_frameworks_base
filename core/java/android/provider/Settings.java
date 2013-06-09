@@ -5020,6 +5020,9 @@ public final class Settings {
          */
         public static final String ADVANCED_REBOOT = "advanced_reboot";
 
+
+        public static final String ENABLE_PERMISSIONS_MANAGEMENT = "enable_permissions_management";
+
         /**
          * This are the settings to be backed up.
          *
