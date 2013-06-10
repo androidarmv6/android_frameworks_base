@@ -1806,6 +1806,17 @@ public final class Settings {
          */
         public static final String MODE_RINGER_STREAMS_AFFECTED = "mode_ringer_streams_affected";
 
+        /**
+         * Correction factor for auto-brightness adjustment light sensor
+         * debounce times.
+         * Smaller factors will make the adjustment more responsive, but might
+         * cause flicker and/or cause higher CPU usage.
+         * Valid range is 0.2 ... 3
+         *
+         * @hide
+         */
+        public static final String AUTO_BRIGHTNESS_RESPONSIVENESS = "auto_brightness_responsiveness";
+
          /**
           * Determines which streams are affected by mute. The
           * stream type's bit should be set to 1 if it should be muted when a mute request
@@ -2760,6 +2771,12 @@ public final class Settings {
          */
         public static final String STATUS_BAR_CLOCK = "status_bar_clock";
 
+       /**
+        * Override and forcefully disable the fullscreen keyboard
+        * @hide
+        */
+        public static final String DISABLE_FULLSCREEN_KEYBOARD = "disable_fullscreen_keyboard";
+
         /**
          * Whether to show the signal text or signal bars.
          * default: 0
@@ -2811,6 +2828,7 @@ public final class Settings {
         /**
          * Whether to use a separate delay for "slide to unlock" and security
          * lock
+         * Pie gap angle, should default to 2
          * @hide
          */
         public static final String SCREEN_LOCK_SLIDE_DELAY_TOGGLE = "screen_lock_slide_delay_toggle";
@@ -2818,6 +2836,17 @@ public final class Settings {
         /**
          * How many ms to delay before enabling the "slide to unlock" screen
          * lock when the screen goes off due to timeout
+         * @hide
+         */
+
+        /**
+         * Pie empty angle, should default to 12
+         * @hide
+         */
+        public static final String PIE_ANGLE = "pie_angle";
+
+        /**
+         * Pie trigger fraction, should default to 1
          * @hide
          */
         public static final String SCREEN_LOCK_SLIDE_TIMEOUT_DELAY = "screen_lock_slide_timeout_delay";
@@ -2838,6 +2867,7 @@ public final class Settings {
         /**
          * Boolean value whether to link ringtone and notification volumes
          *
+         * Pie size fraction, default is 1.0f (normal)
          * @hide
          */
         public static final String VOLUME_LINK_NOTIFICATION = "volume_link_notification";
@@ -2862,6 +2892,17 @@ public final class Settings {
 
         /**
          * Whether or not volume button music controls should be enabled to seek media tracks
+         * @hide
+         */
+        /**
+         * Allows quick unlock
+         * @hide
+         */
+        public static final String LOCKSCREEN_QUICK_UNLOCK = "lockscreen_quick_unlock";
+
+        /**
+         * Allows lockscreen to show homescreen widgets
+         * The value is boolean (1 or 0).
          * @hide
          */
         public static final String VOLBTN_MUSIC_CONTROLS = "volbtn_music_controls";
@@ -3201,6 +3242,83 @@ public final class Settings {
         public static final String VOLUME_KEYS_CONTROL_RING_STREAM = "volume_keys_control_ring_stream";
 
         /**
+         * Whether to enable custom rebindings of the actions performed on
+         * certain key press events.
+         * @hide
+         */
+        public static final String HARDWARE_KEY_REBINDING = "hardware_key_rebinding";
+
+         /**
+          * Action to perform when the home key is long-pressed. (Default is 2)
+          * 0 - Nothing
+          * 1 - Menu
+          * 2 - App-switch
+          * 3 - Search
+          * 4 - Voice search
+          * 5 - In-app search
+          * @hide
+          */
+         public static final String KEY_HOME_LONG_PRESS_ACTION = "key_home_long_press_action";
+
+         /**
+          * Action to perform when the menu key is pressed. (Default is 1)
+          * (See KEY_HOME_LONG_PRESS_ACTION for valid values)
+          * @hide
+          */
+         public static final String KEY_MENU_ACTION = "key_menu_action";
+
+         /**
+          * Action to perform when the menu key is long-pressed.
+          * (Default is 0 on devices with a search key, 3 on devices without)
+          * (See KEY_HOME_LONG_PRESS_ACTION for valid values)
+          * @hide
+          */
+         public static final String KEY_MENU_LONG_PRESS_ACTION = "key_menu_long_press_action";
+
+         /**
+          * Action to perform when the assistant (search) key is pressed. (Default is 3)
+          * (See KEY_HOME_LONG_PRESS_ACTION for valid values)
+          * @hide
+          */
+         public static final String KEY_ASSIST_ACTION = "key_assist_action";
+
+         /**
+          * Action to perform when the assistant (search) key is long-pressed. (Default is 4)
+          * (See KEY_HOME_LONG_PRESS_ACTION for valid values)
+          * @hide
+          */
+         public static final String KEY_ASSIST_LONG_PRESS_ACTION = "key_assist_long_press_action";
+
+         /**
+          * Action to perform when the app switch key is pressed. (Default is 2)
+          * (See KEY_HOME_LONG_PRESS_ACTION for valid values)
+          * @hide
+          */
+         public static final String KEY_APP_SWITCH_ACTION = "key_app_switch_action";
+
+         /**
+          * Action to perform when the app switch key is long-pressed. (Default is 0)
+          * (See KEY_HOME_LONG_PRESS_ACTION for valid values)
+          * @hide
+          */
+         public static final String KEY_APP_SWITCH_LONG_PRESS_ACTION = "key_app_switch_long_press_action";
+
+        /**
+         * Control the display of the action overflow button within app UI.
+         * 0 = use system default
+         * 1 = force on
+         * @hide
+         */
+        public static final String UI_FORCE_OVERFLOW_BUTTON = "ui_force_overflow_button";
+
+	/**
+         * Volume key controls ringtone or media sound stream
+         *
+         * @hide
+         */
+	public static final String VOLUME_KEYS_CONTROL_RING_STREAM = "volume_keys_control_ring_stream";
+        
+	/**
          * Settings to backup. This is here so that it's in the same place as the settings
          * keys and easy to update.
          *

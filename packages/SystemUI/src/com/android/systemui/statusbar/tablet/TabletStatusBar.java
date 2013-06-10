@@ -295,6 +295,9 @@ public class TabletStatusBar extends BaseStatusBar implements
                 (TextView)mNotificationPanel.findViewById(R.id.mobile_text));
         mNetworkController.addCombinedLabelView(
                 (TextView)mBarContents.findViewById(R.id.network_text));
+        // Add QuickSettings
+        mNotificationPanel.setupQuickSettings(this, mNetworkController, mBluetoothController, 
+                mBatteryController, mLocationController);
 
         mStatusBarView.setIgnoreChildren(0, mNotificationTrigger, mNotificationPanel);
 

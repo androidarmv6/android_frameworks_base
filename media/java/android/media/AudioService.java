@@ -4300,6 +4300,19 @@ public class AudioService extends IAudioService.Stub implements OnFinished {
                 }
             });
         }
+=======
+    private void adjustCurrentStreamVolume() {
+            VolumeStreamState streamState;
+            int device;
+
+            for (int stream = 0; stream < AudioSystem.getNumStreamTypes(); stream++) {
+                if (stream == mStreamVolumeAlias[stream]) {
+                    streamState = mStreamStates[mStreamVolumeAlias[stream]];
+                    device = getDeviceForStream(stream);
+                    // apply stored value for device
+                    streamState.applyDeviceVolume(device);
+                }
+            }
     }
 
     //==========================================================================================
