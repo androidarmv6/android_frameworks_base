@@ -496,7 +496,6 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     boolean mShowingLockscreen;
     boolean mShowingDream;
     boolean mDreamingLockscreen;
-    boolean mHomePressed;
     boolean mHomeLongPressed;
     boolean mAppSwitchLongPressed;
     Intent mHomeIntent;
@@ -1116,6 +1115,36 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         } catch (RemoteException ex) { }
         mSettingsObserver = new SettingsObserver(mHandler);
         mSettingsObserver.observe();
+
+        // SystemUI reboot
+        mContext.getContentResolver().registerContentObserver(
+                Settings.System.getUriFor(Settings.System.USER_INTERFACE_STATE), false, new ContentObserver(new Handler()) {
+            @Override
+            public void onChange(boolean selfChange) {
+                // Return for reset triggers
+                if (Settings.System.getInt(mContext.getContentResolver(), 
+                    Settings.System.USER_INTERFACE_STATE, 0) == 0) {
+                    return;
+                }
+
+                // Update layout
+                update(true);
+                
+                // Reset trigger
+                Settings.System.putInt(mContext.getContentResolver(), Settings.System.USER_INTERFACE_STATE, 0);
+            }});
+
+        // Expanded desktop
+        mContext.getContentResolver().registerContentObserver(
+                Settings.System.getUriFor(Settings.System.EXPANDED_DESKTOP_STATE),
+                    false, new ContentObserver(new Handler()) {
+            @Override
+            public void onChange(boolean selfChange) {
+                updateHybridLayout();
+                update(false);
+            }
+        });
+
         mShortcutManager = new ShortcutManager(context, mHandler);
         mShortcutManager.observe();
         mUiMode = context.getResources().getInteger(
@@ -1450,6 +1479,68 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             if (expandedDesktopStyle != mExpandedDesktopStyle) {
                 mExpandedDesktopStyle = expandedDesktopStyle;
                 updateDisplayMetrics = true;
+            }
+
+            boolean keyRebindingEnabled = Settings.System.getInt(resolver,
+                    Settings.System.HARDWARE_KEY_REBINDING, 0) == 1;
+
+            if (!keyRebindingEnabled) {
+                if (mHasHomeKey) {
+                    if (mHasAppSwitchKey) {
+                        mLongPressOnHomeBehavior = KEY_ACTION_NOTHING;
+                    } else {
+                        mLongPressOnHomeBehavior = KEY_ACTION_APP_SWITCH;
+                    }
+                }
+                if (mHasMenuKey) {
+                    mPressOnMenuBehavior = KEY_ACTION_MENU;
+                    if (mHasAssistKey) {
+                        mLongPressOnMenuBehavior = KEY_ACTION_NOTHING;
+                    } else {
+                        mLongPressOnMenuBehavior = KEY_ACTION_SEARCH;
+                    }
+                }
+                if (mHasAssistKey) {
+                    mPressOnAssistBehavior = KEY_ACTION_SEARCH;
+                    mLongPressOnAssistBehavior = KEY_ACTION_VOICE_SEARCH;
+                }
+                if (mHasAppSwitchKey) {
+                    mPressOnAppSwitchBehavior = KEY_ACTION_APP_SWITCH;
+                    mLongPressOnAppSwitchBehavior = KEY_ACTION_NOTHING;
+                }
+            } else {
+                if (mHasHomeKey) {
+                    if (mHasAppSwitchKey) {
+                        mLongPressOnHomeBehavior = Settings.System.getInt(resolver,
+                                Settings.System.KEY_HOME_LONG_PRESS_ACTION, KEY_ACTION_NOTHING);
+                    } else {
+                        mLongPressOnHomeBehavior = Settings.System.getInt(resolver,
+                                Settings.System.KEY_HOME_LONG_PRESS_ACTION, KEY_ACTION_APP_SWITCH);
+                    }
+                }
+                if (mHasMenuKey) {
+                    mPressOnMenuBehavior = Settings.System.getInt(resolver,
+                            Settings.System.KEY_MENU_ACTION, KEY_ACTION_MENU);
+                    if (mHasAssistKey) {
+                        mLongPressOnMenuBehavior = Settings.System.getInt(resolver,
+                                Settings.System.KEY_MENU_LONG_PRESS_ACTION, KEY_ACTION_NOTHING);
+                    } else {
+                        mLongPressOnMenuBehavior = Settings.System.getInt(resolver,
+                                Settings.System.KEY_MENU_LONG_PRESS_ACTION, KEY_ACTION_SEARCH);
+                    }
+                }
+                if (mHasAssistKey) {
+                    mPressOnAssistBehavior = Settings.System.getInt(resolver,
+                            Settings.System.KEY_ASSIST_ACTION, KEY_ACTION_SEARCH);
+                    mLongPressOnAssistBehavior = Settings.System.getInt(resolver,
+                            Settings.System.KEY_ASSIST_LONG_PRESS_ACTION, KEY_ACTION_VOICE_SEARCH);
+                }
+                if (mHasAppSwitchKey) {
+                    mPressOnAppSwitchBehavior = Settings.System.getInt(resolver,
+                            Settings.System.KEY_APP_SWITCH_ACTION, KEY_ACTION_APP_SWITCH);
+                    mLongPressOnAppSwitchBehavior = Settings.System.getInt(resolver,
+                            Settings.System.KEY_APP_SWITCH_LONG_PRESS_ACTION, KEY_ACTION_NOTHING);
+                }
             }
 
             // Configure rotation lock.
@@ -2214,8 +2305,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
 
         if (DEBUG_INPUT) {
             Log.d(TAG, "interceptKeyTi keyCode=" + keyCode + " down=" + down + " repeatCount="
-                    + repeatCount + " keyguardOn=" + keyguardOn + " mHomePressed=" + mHomePressed
-                    + " canceled=" + canceled);
+                    + repeatCount + " keyguardOn=" + keyguardOn + " canceled=" + canceled);
         }
 
         // If we think we might have a volume down & power/volume-up key chord on the way
@@ -5431,7 +5521,6 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 pw.println(mForceStatusBarFromKeyguard);
         pw.print(prefix); pw.print("mDismissKeyguard="); pw.print(mDismissKeyguard);
                 pw.print(" mWinDismissingKeyguard="); pw.print(mWinDismissingKeyguard);
-                pw.print(" mHomePressed="); pw.println(mHomePressed);
         pw.print(prefix); pw.print("mAllowLockscreenWhenOn="); pw.print(mAllowLockscreenWhenOn);
                 pw.print(" mLockScreenTimeout="); pw.print(mLockScreenTimeout);
                 pw.print(" mLockScreenTimerActive="); pw.println(mLockScreenTimerActive);

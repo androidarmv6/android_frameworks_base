@@ -1093,7 +1093,9 @@ final class DisplayPowerController {
                             + ", mAmbientLux=" + mAmbientLux);
                 }
             }
+
             long debounceTime = mDebounceLuxTime + debounceDelay;
+
             if (time >= debounceTime) {
                 // Be conservative about reducing the brightness, only reduce it a little bit
                 // at a time to avoid having to bump it up again soon.
