@@ -277,6 +277,7 @@ class BluetoothEventLoop {
                 intent.putExtra(BluetoothDevice.EXTRA_VID, vidValue);
                 intent.putExtra(BluetoothDevice.EXTRA_PID, pidValue);
             }
+            intent.addFlags(Intent.FLAG_RECEIVER_REGISTERED_ONLY_BEFORE_BOOT);
             if(uuids != null) {
                 intent.putExtra(BluetoothDevice.EXTRA_UUIDS, uuids);
             }
@@ -289,6 +290,7 @@ class BluetoothEventLoop {
                 intent.putExtra(BluetoothDevice.EXTRA_DEVICE, mAdapter.getRemoteDevice(address));
                 intent.putExtra(BluetoothDevice.EXTRA_RSSI, rssiValue);
                 intent.putExtra(BluetoothDevice.EXTRA_NAME, name);
+                intent.addFlags(Intent.FLAG_RECEIVER_REGISTERED_ONLY_BEFORE_BOOT);
                 if(uuids != null) {
                     intent.putExtra(BluetoothDevice.EXTRA_UUIDS, uuids);
                 }
@@ -569,6 +571,7 @@ class BluetoothEventLoop {
             Intent intent = new Intent(BluetoothDevice.ACTION_RSSI_UPDATE);
             intent.putExtra(BluetoothDevice.EXTRA_DEVICE, device);
             intent.putExtra(BluetoothDevice.EXTRA_RSSI, propValues[1]);
+            intent.addFlags(Intent.FLAG_RECEIVER_REGISTERED_ONLY_BEFORE_BOOT);
             mContext.sendBroadcast(intent, BLUETOOTH_PERM);
         } else if (name.equals("Connected")) {
             Log.d(TAG, "Device property Connected: " + propValues[1]);
@@ -664,6 +667,7 @@ class BluetoothEventLoop {
             Intent intent = new Intent(BluetoothDevice.ACTION_LE_CONN_PARAMS);
             intent.putExtra(BluetoothDevice.EXTRA_DEVICE, device);
             intent.putExtra(BluetoothDevice.EXTRA_CONN_INTERVAL, Integer.valueOf(propValues[1]));
+            intent.addFlags(Intent.FLAG_RECEIVER_REGISTERED_ONLY_BEFORE_BOOT);
             mContext.sendBroadcast(intent, BLUETOOTH_PERM);
         }
     }

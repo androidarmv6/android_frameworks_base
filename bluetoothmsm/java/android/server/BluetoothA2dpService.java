@@ -427,11 +427,15 @@ public class BluetoothA2dpService extends IBluetoothA2dp.Stub {
 
                 if (uri == null)
                     return;
-                /*Check if MusicApp is not playing state and previous Playstatus of
-                  Music App is not equal to PLAYING before we update the PLAYSTATUS
-                  or Metadata to Remote device.*/
-                if ((mIsMusicAppPlaying == false) && (mPlayStatus != STATUS_PLAYING)) {
-                    log("Internal audio file data, ignoring");
+
+                /*Check if MusicApp is not playing state and previous Playstatus of Music App is
+                  not equal to PLAYING before we update the PLAYSTATUS or Metadata to Remote
+                  device. Video and Youtube Player doesn't send PLAYSTATUS changed intent so
+                  ignoring the check in this case.*/
+                if ((mIsMusicAppPlaying == false) && (mPlayStatus != STATUS_PLAYING)
+                    && !(uri.toString().contains("content://media/external/video/"))
+                    && !(uri.toString().contains("http://"))) {
+                    log("MusicApp PlayStatus is PAUSED, Ignoring");
                     return;
                 }
 

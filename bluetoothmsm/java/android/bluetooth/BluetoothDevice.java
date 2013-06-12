@@ -238,7 +238,7 @@ public final class BluetoothDevice implements Parcelable {
      * Used as an UINT 16 extra field in {ACTION_LE_CONN_PARAMS} intent.
      * It contains the negotiated connection interval value after establishing LE connection.
      * @hide */
-    public static final String EXTRA_CONN_INTERVAL = "android.bluetooth.device.extra.CONN_INTERVAL";
+    public static final String EXTRA_CONN_INTERVAL = "codeaurora.bluetooth.device.extra.CONN_INTERVAL";
 
     /**
      * Used as a Parcelable {@link BluetoothClass} extra field in {@link
@@ -273,7 +273,7 @@ public final class BluetoothDevice implements Parcelable {
             "android.bluetooth.device.extra.PREVIOUS_BOND_STATE";
 
     /** @hide */
-    public static final String EXTRA_SECURE_PAIRING = "android.bluetooth.device.extra.SECURE";
+    public static final String EXTRA_SECURE_PAIRING = "codeaurora.bluetooth.device.extra.SECURE";
 
     /**
      * Indicates the remote device is not bonded (paired).
@@ -578,13 +578,13 @@ public final class BluetoothDevice implements Parcelable {
      * Used as an extra field for SAP state change events.
      * @hide
      */
-    public static final String SAP_STATE_CHANGED = "com.android.bluetooth.sap.statechanged";
+    public static final String SAP_STATE_CHANGED = "org.codeaurora.bluetooth.sap.statechanged";
 
     /**
      * Used as an extra field for DUN state change events.
      * @hide
      */
-    public static final String DUN_STATE_CHANGED = "com.android.bluetooth.dun.statechanged";
+    public static final String DUN_STATE_CHANGED = "org.codeaurora.bluetooth.dun.statechanged";
     /**
      * Lazy initialization. Guaranteed final after first object constructed, or
      * getService() called.

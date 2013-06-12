@@ -71,6 +71,10 @@ class BluetoothManagerService extends IBluetoothManager.Stub {
     }
 
     public boolean isEnabled() {
+        if ((bluetooth != null) && (bluetooth.isEnabled())) {
+            Slog.i(TAG, "Bluetooth is Enabled");
+            return true;
+        }
         return false;
     }
 

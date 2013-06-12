@@ -229,10 +229,10 @@ public final class BluetoothHeadset implements BluetoothProfile {
         mContext = context;
         mServiceListener = l;
         mAdapter = BluetoothAdapter.getDefaultAdapter();
-		Log.d(TAG, "BluetoothHeadset is created");
-		if(mServiceListener == null)
-			Log.e(TAG, "ERROR in headset");
-        if (!context.bindService(new Intent(IBluetoothHeadset.class.getName()), mConnection, 0)) {
+        Log.d(TAG, "BluetoothHeadset is created");
+        if (mServiceListener == null)
+            Log.e(TAG, "ERROR in headset");
+        if (!context.bindService(new Intent(IBluetoothHeadset.class.getName()), mConnection, Context.BIND_AUTO_CREATE)) {
             Log.e(TAG, "Could not bind to Bluetooth Headset Service");
         }
     }
