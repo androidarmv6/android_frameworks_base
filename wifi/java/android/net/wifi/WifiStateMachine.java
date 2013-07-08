@@ -23,8 +23,13 @@ import static android.net.wifi.WifiManager.WIFI_STATE_ENABLING;
 import static android.net.wifi.WifiManager.WIFI_STATE_UNKNOWN;
 
 /**
- * TODO:
+ * TODO: Add soft AP states as part of WIFI_STATE_XXX
+ * Retain WIFI_STATE_ENABLING that indicates driver is loading
+ * Add WIFI_STATE_AP_ENABLED to indicate soft AP has started
+ * and WIFI_STATE_FAILED for failure
  * Deprecate WIFI_STATE_UNKNOWN
+ *
+ * Doing this will simplify the logic for sending broadcasts
  */
 import static android.net.wifi.WifiManager.WIFI_AP_STATE_DISABLED;
 import static android.net.wifi.WifiManager.WIFI_AP_STATE_DISABLING;
@@ -100,10 +105,13 @@ import java.util.regex.Pattern;
  * Track the state of Wifi connectivity. All event handling is done here,
  * and all changes in connectivity state are initiated here.
  *
- * Wi-Fi now supports three modes of operation: Client, SoftAp and p2p
- * In the current implementation, we support concurrent wifi p2p and wifi operation.
- * The WifiStateMachine handles SoftAp and Client operations while WifiP2pService
- * handles p2p operation.
+ * Wi-Fi now supports three modes of operation: Client, Soft Ap and Direct
+ * In the current implementation, we do not support any concurrency and thus only
+ * one of Client, Soft Ap or Direct operation is supported at any time.
+ *
+ * The WifiStateMachine supports Soft Ap and Client operations while WifiP2pService
+ * handles Direct. WifiP2pService and WifiStateMachine co-ordinate to ensure only
+ * one exists at a certain time.
  *
  * @hide
  */
@@ -141,6 +149,7 @@ public class WifiStateMachine extends StateMachine {
     private final boolean mBackgroundScanSupported;
 
     private String mInterfaceName;
+    private String mSoftapInterfaceName;
     /* Tethering interface could be separate from wlan interface */
     private String mTetherInterfaceName;
 
@@ -653,6 +662,7 @@ public class WifiStateMachine extends StateMachine {
         super("WifiStateMachine");
         mContext = context;
         mInterfaceName = wlanInterface;
+        mSoftapInterfaceName = SystemProperties.get("wifi.ap.interface", mInterfaceName);
 
         mNetworkInfo = new NetworkInfo(ConnectivityManager.TYPE_WIFI, 0, NETWORKTYPE, "");
         mBatteryStats = IBatteryStats.Stub.asInterface(ServiceManager.getService(
@@ -2473,12 +2483,12 @@ public class WifiStateMachine extends StateMachine {
         new Thread(new Runnable() {
             public void run() {
                 try {
-                    mNwService.startAccessPoint(config, mInterfaceName);
+                    mNwService.startAccessPoint(config, mInterfaceName, mSoftapInterfaceName);
                 } catch (Exception e) {
                     loge("Exception in softap start " + e);
                     try {
                         mNwService.stopAccessPoint(mInterfaceName);
-                        mNwService.startAccessPoint(config, mInterfaceName);
+                        mNwService.startAccessPoint(config, mInterfaceName, mSoftapInterfaceName);
                     } catch (Exception e1) {
                         loge("Exception in softap re-start " + e1);
                         sendMessage(CMD_START_AP_FAILURE);
@@ -4327,7 +4337,7 @@ public class WifiStateMachine extends StateMachine {
                     if (DBG) log("Stopping Soft AP");
                     /* We have not tethered at this point, so we just shutdown soft Ap */
                     try {
-                        mNwService.stopAccessPoint(mInterfaceName);
+                        mNwService.stopAccessPoint(mSoftapInterfaceName);
                     } catch(Exception e) {
                         loge("Exception in stopAccessPoint()");
                     }
