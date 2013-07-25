@@ -1015,23 +1015,23 @@ public class NetworkManagementService extends INetworkManagementService.Stub
 
     @Override
     public void startAccessPoint(
-            WifiConfiguration wifiConfig, String softapIface) {
+            WifiConfiguration wifiConfig, String wlanIface) {
         mContext.enforceCallingOrSelfPermission(CONNECTIVITY_INTERNAL, TAG);
         try {
             Resources resources = mContext.getResources();
             if (resources.getBoolean(
                         com.android.internal.R.bool.config_wifiApFirmwareReload)) {
-                wifiFirmwareReload(softapIface, "AP");
+                wifiFirmwareReload(wlanIface, "AP");
             }
 
             if (resources.getBoolean(
                         com.android.internal.R.bool.config_wifiApStartInterface)) {
-                mConnector.execute("softap", "start", softapIface);
+                mConnector.execute("softap", "start", wlanIface);
             }
             if (wifiConfig == null) {
-                mConnector.execute("softap", "set", softapIface);
+                mConnector.execute("softap", "set", wlanIface);
             } else {
-                mConnector.execute("softap", "set", softapIface, wifiConfig.SSID,
+                mConnector.execute("softap", "set", wlanIface, wifiConfig.SSID,
                         getSecurityType(wifiConfig), wifiConfig.preSharedKey);
             }
             mConnector.execute("softap", "startap");
@@ -1063,11 +1063,11 @@ public class NetworkManagementService extends INetworkManagementService.Stub
     }
 
     @Override
-    public void stopAccessPoint(String softapIface) {
+    public void stopAccessPoint(String wlanIface) {
         mContext.enforceCallingOrSelfPermission(CONNECTIVITY_INTERNAL, TAG);
         try {
             mConnector.execute("softap", "stopap");
-            wifiFirmwareReload(softapIface, "STA");
+            wifiFirmwareReload(wlanIface, "STA");
         } catch (NativeDaemonConnectorException e) {
             throw e.rethrowAsParcelableException();
         }

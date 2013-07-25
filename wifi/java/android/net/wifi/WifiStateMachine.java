@@ -128,7 +128,6 @@ public class WifiStateMachine extends StateMachine {
     private final boolean mBackgroundScanSupported;
 
     private String mInterfaceName;
-    private String mSoftapInterfaceName;
     /* Tethering interface could be seperate from wlan interface */
     private String mTetherInterfaceName;
 
@@ -585,7 +584,7 @@ public class WifiStateMachine extends StateMachine {
 
         mContext = context;
         mInterfaceName = wlanInterface;
-        mSoftapInterfaceName = SystemProperties.get("wifi.ap.interface", mInterfaceName);
+
         mNetworkInfo = new NetworkInfo(ConnectivityManager.TYPE_WIFI, 0, NETWORKTYPE, "");
         mBatteryStats = IBatteryStats.Stub.asInterface(ServiceManager.getService("batteryinfo"));
 
@@ -1910,13 +1909,13 @@ public class WifiStateMachine extends StateMachine {
         // start hostapd on a seperate thread
         new Thread(new Runnable() {
             public void run() {
-		try {
-                    mNwService.startAccessPoint(config, mSoftapInterfaceName);
+                try {
+                    mNwService.startAccessPoint(config, mInterfaceName);
                 } catch (Exception e) {
                     loge("Exception in softap start " + e);
                     try {
-                        mNwService.stopAccessPoint(mSoftapInterfaceName);
-                        mNwService.startAccessPoint(config, mSoftapInterfaceName);
+                        mNwService.stopAccessPoint(mInterfaceName);
+                        mNwService.startAccessPoint(config, mInterfaceName);
                     } catch (Exception e1) {
                         loge("Exception in softap re-start " + e1);
                         sendMessage(CMD_START_AP_FAILURE);
@@ -2141,22 +2140,18 @@ public class WifiStateMachine extends StateMachine {
              */
             new Thread(new Runnable() {
                 public void run() {
-                    int type = 1;
-
                     mWakeLock.acquire();
                     //enabling state
                     switch(message.arg1) {
                         case WIFI_STATE_ENABLING:
                             setWifiState(WIFI_STATE_ENABLING);
-			    type = 1;
                             break;
                         case WIFI_AP_STATE_ENABLING:
                             setWifiApState(WIFI_AP_STATE_ENABLING);
-			    type = 2;
                             break;
                     }
 
-                    if(mWifiNative.loadDriver(type)) {
+                    if(mWifiNative.loadDriver()) {
                         if (DBG) log("Driver load successful");
                         sendMessage(CMD_LOAD_DRIVER_SUCCESS);
                     } else {
@@ -2278,21 +2273,9 @@ public class WifiStateMachine extends StateMachine {
             message.copyFrom(getCurrentMessage());
             new Thread(new Runnable() {
                 public void run() {
-                    int type = 1;
-
                     if (DBG) log(getName() + message.toString() + "\n");
                     mWakeLock.acquire();
-                    switch(message.arg1) {
-                       case WIFI_STATE_DISABLED:
-                       case WIFI_STATE_UNKNOWN:
-                           type = 1;
-                           break;
-                       case WIFI_AP_STATE_DISABLED:
-                       case WIFI_AP_STATE_FAILED:
-                           type = 2;
-                           break;
-                    }
-                    if(mWifiNative.unloadDriver(type)) {
+                    if(mWifiNative.unloadDriver()) {
                         if (DBG) log("Driver unload successful");
                         sendMessage(CMD_UNLOAD_DRIVER_SUCCESS);
 
@@ -3974,7 +3957,7 @@ public class WifiStateMachine extends StateMachine {
 
                     /* We have not tethered at this point, so we just shutdown soft Ap */
                     try {
-                        mNwService.stopAccessPoint(mSoftapInterfaceName);
+                        mNwService.stopAccessPoint(mInterfaceName);
                     } catch(Exception e) {
                         loge("Exception in stopAccessPoint()");
                     }
@@ -4102,7 +4085,7 @@ public class WifiStateMachine extends StateMachine {
                     if (isWifiTethered(stateChange.active)) break;
 
                     try {
-                        mNwService.stopAccessPoint(mSoftapInterfaceName);
+                        mNwService.stopAccessPoint(mInterfaceName);
                     } catch(Exception e) {
                         loge("Exception in stopAccessPoint()");
                     }
@@ -4112,7 +4095,7 @@ public class WifiStateMachine extends StateMachine {
                     if (message.arg1 == mTetherToken) {
                         loge("Failed to get tether update, force stop access point");
                         try {
-                            mNwService.stopAccessPoint(mSoftapInterfaceName);
+                            mNwService.stopAccessPoint(mInterfaceName);
                         } catch(Exception e) {
                             loge("Exception in stopAccessPoint()");
                         }

@@ -107,23 +107,13 @@ static jboolean android_net_wifi_isDriverLoaded(JNIEnv* env, jobject)
     return (jboolean)(::is_wifi_driver_loaded() == 1);
 }
 
-static jboolean android_net_wifi_loadDriver(JNIEnv* env, jobject, int type)
+static jboolean android_net_wifi_loadDriver(JNIEnv* env, jobject)
 {
-#ifdef WIFI_AP_HAS_OWN_DRIVER
-    if(type == 2) {
-	return (jboolean)(::hotspot_load_driver() == 0);
-    }
-#endif
     return (jboolean)(::wifi_load_driver() == 0);
 }
 
-static jboolean android_net_wifi_unloadDriver(JNIEnv* env, jobject, int type)
+static jboolean android_net_wifi_unloadDriver(JNIEnv* env, jobject)
 {
-#ifdef WIFI_AP_HAS_OWN_DRIVER
-    if(type == 2) {
-        return (jboolean)(::hotspot_unload_driver() == 0);
-    }
-#endif
     return (jboolean)(::wifi_unload_driver() == 0);
 }
 
@@ -213,9 +203,9 @@ static jboolean android_net_wifi_setMode(JNIEnv* env, jobject, jint type)
 static JNINativeMethod gWifiMethods[] = {
     /* name, signature, funcPtr */
 
-    { "loadDriver", "(I)Z",  (void *)android_net_wifi_loadDriver },
+    { "loadDriver", "()Z",  (void *)android_net_wifi_loadDriver },
     { "isDriverLoaded", "()Z",  (void *)android_net_wifi_isDriverLoaded },
-    { "unloadDriver", "(I)Z",  (void *)android_net_wifi_unloadDriver },
+    { "unloadDriver", "()Z",  (void *)android_net_wifi_unloadDriver },
     { "startSupplicant", "(Z)Z",  (void *)android_net_wifi_startSupplicant },
     { "killSupplicant", "(Z)Z",  (void *)android_net_wifi_killSupplicant },
     { "connectToSupplicant", "(Ljava/lang/String;)Z",
