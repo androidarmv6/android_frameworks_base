@@ -679,7 +679,7 @@ public class BluetoothGattService {
             return false;
         }
 
-        public boolean deregisterCharacteristicsWatcher() {
+        public synchronized boolean deregisterCharacteristicsWatcher() {
             Log.d(TAG, "deregisterCharacteristicsWatcher: ");
             try {
                return mService.deregisterCharacteristicsWatcher(mObjPath, mServiceId);
