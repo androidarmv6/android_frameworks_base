@@ -1,7 +1,6 @@
 /*
 ** Copyright 2006, The Android Open Source Project
-** Copyright (c) 2011-2013, The Linux Foundation. All rights reserved.
-** Not a Contribution.
+** Copyright (c) 2011, The Linux Foundation. All rights reserved.
 **
 ** Licensed under the Apache License, Version 2.0 (the "License");
 ** you may not use this file except in compliance with the License.
@@ -58,9 +57,7 @@ static Properties remote_device_properties[] = {
     {"Type", DBUS_TYPE_STRING},
     {"Broadcaster", DBUS_TYPE_BOOLEAN},
     {"Services", DBUS_TYPE_ARRAY},
-    {"LeConnParams", DBUS_TYPE_UINT16},
-    {"PID", DBUS_TYPE_UINT16},
-    {"VID", DBUS_TYPE_UINT16}
+    {"LeConnParams", DBUS_TYPE_UINT16}
 };
 
 static Properties adapter_properties[] = {
