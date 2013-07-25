@@ -4608,10 +4608,6 @@ public abstract class ViewGroup extends View implements ViewParent, ViewManager 
         mPersistentDrawingCache = drawingCacheToKeep & PERSISTENT_ALL_CACHES;
     }
 
-    public void setDirectionality(int drawingCacheToKeep) {
-        return;
-    }
-
     /**
      * Returns the basis of alignment during layout operations on this view group:
      * either {@link #CLIP_BOUNDS} or {@link #OPTICAL_BOUNDS}.

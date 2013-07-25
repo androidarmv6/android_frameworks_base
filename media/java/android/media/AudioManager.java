@@ -420,11 +420,6 @@ public class AudioManager {
      */
     public static final int USE_DEFAULT_STREAM_TYPE = Integer.MIN_VALUE;
 
-    /**
-     * Showing whether we are routing FM Radio to speaker or not. Used by stock SEMC FM Radio app
-     */
-    private static boolean FmRadioSpeaker = true;
-
     private static IAudioService sService;
 
     /**
@@ -1129,17 +1124,6 @@ public class AudioManager {
         }
     }
 
-    public void setSpeakerMediaOn(boolean on){
-        Log.e(TAG, "Setting speakerMediaon");
-        if (on)
-            setParameters("fm_radio_speaker=on");
-        else
-            setParameters("fm_radio_speaker=off");
-
-        FmRadioSpeaker=on;
-        playSoundEffect(FX_KEY_CLICK, -1);
-    }
-
     /**
      * Checks whether the speakerphone is on or off.
      *
@@ -1154,14 +1138,6 @@ public class AudioManager {
             return false;
         }
      }
-
-    /**
-     * Checks whether the speakerphone is on or off.
-     * @return true if speakerphone is on, false if it's off
-     */
-    public boolean isSpeakerMediaOn() {
-        return FmRadioSpeaker;
-    }
 
     //====================================================================
     // Bluetooth SCO control
