@@ -37,7 +37,6 @@ import static com.android.server.NetworkManagementSocketTagger.PROP_QTAGUID_ENAB
 
 import android.bluetooth.BluetoothTetheringDataTracker;
 import android.content.Context;
-import android.content.res.Resources;
 import android.net.INetworkManagementEventObserver;
 import android.net.InterfaceConfiguration;
 import android.net.LinkAddress;
@@ -1018,13 +1017,9 @@ public class NetworkManagementService extends INetworkManagementService.Stub
             WifiConfiguration wifiConfig, String wlanIface) {
         mContext.enforceCallingOrSelfPermission(CONNECTIVITY_INTERNAL, TAG);
         try {
-            Resources resources = mContext.getResources();
-            if (resources.getBoolean(
-                        com.android.internal.R.bool.config_wifiApFirmwareReload)) {
-                wifiFirmwareReload(wlanIface, "AP");
-            }
+            wifiFirmwareReload(wlanIface, "AP");
 
-            if (resources.getBoolean(
+            if (mContext.getResources().getBoolean(
                         com.android.internal.R.bool.config_wifiApStartInterface)) {
                 mConnector.execute("softap", "start", wlanIface);
             }
