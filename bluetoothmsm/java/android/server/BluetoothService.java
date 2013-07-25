@@ -201,8 +201,7 @@ public class BluetoothService extends IBluetooth.Stub {
     private final ConcurrentHashMap<Integer, ServiceRecordClient> mServiceRecordToPid;
     private final HashMap<String, ArrayList<ParcelUuid>> mGattIntentTracker;
     private final HashMap<String, IBluetoothGattService> mGattServiceTracker;
-    private final HashMap<String, HashMap<Integer, IBluetoothGattService>> mGattWatcherTracker;
-    private final HashMap<String, ArrayList<String>> mGattOperationTracker;
+    private final HashMap<String, IBluetoothGattService> mGattWatcherTracker;
 
     private final SortedMap<String, Integer> mGattServices;
 
@@ -251,7 +250,6 @@ public class BluetoothService extends IBluetooth.Stub {
              "android.bluetooth.service.action.DISCOVERABLE_TIMEOUT";
 
     public IBluetoothPreferredDeviceListCallback sPListCallBack = null;
-    public ArrayList<Integer> usedSrvIds = new ArrayList<Integer>();
     public String callerPreferredDevApi = null;
     public String callerIntent = null;
     public HashMap<BluetoothDevice, Integer> preferredDevicesList;
@@ -430,8 +428,7 @@ public class BluetoothService extends IBluetooth.Stub {
         mUuidCallbackTracker = new ConcurrentHashMap<RemoteService, IBluetoothCallback>();
         mGattIntentTracker = new HashMap<String, ArrayList<ParcelUuid>>();
         mGattServiceTracker = new HashMap<String, IBluetoothGattService>();
-        mGattWatcherTracker = new HashMap<String, HashMap<Integer, IBluetoothGattService>>();
-        mGattOperationTracker = new HashMap<String, ArrayList<String>>();
+        mGattWatcherTracker = new HashMap<String, IBluetoothGattService>();
         mGattServices = new TreeMap<String, Integer>();
         mDeviceProfileState = new HashMap<String, BluetoothDeviceProfileState>();
         mA2dpProfileState = new BluetoothProfileState(mContext, BluetoothProfileState.A2DP);
@@ -721,7 +718,6 @@ public class BluetoothService extends IBluetooth.Stub {
         mAdapterConnectionState = BluetoothAdapter.STATE_DISCONNECTED;
         mAdapterUuids = null;
         mAdapterSdpHandles = null;
-        usedSrvIds = null;
 
         // Log bluetooth off to battery stats.
         long ident = Binder.clearCallingIdentity();
@@ -759,7 +755,6 @@ public class BluetoothService extends IBluetooth.Stub {
         disableSAP();
         disableMAP();
         tearDownNativeDataNative();
-        usedSrvIds = null;
     }
 
     /**
@@ -4487,47 +4482,27 @@ public class BluetoothService extends IBluetooth.Stub {
     }
 
     /*package*/ synchronized void makeDiscoverCharacteristicsCallback(String servicePath,
-                 String index, boolean result) {
-        Log.d(TAG, "makeDiscoverCharacteristicsCallback for service: " + servicePath);
-        Log.d(TAG, "makeDiscoverCharacteristicsCallback for index: " + index);
+                 boolean result) {
+        IBluetoothGattService callback = mGattServiceTracker.get(servicePath);
 
-        ArrayList<String> objPathSrvIdList = mGattOperationTracker.get("discoverChar");
-        if(objPathSrvIdList != null) {
-            Log.d(TAG, "objPathSrvIdList not null");
-            Log.d(TAG, "objPathSrvIdList length::"+objPathSrvIdList.size());
-            for(int i=0; i < objPathSrvIdList.size(); i++) {
-                String pathSrvId = objPathSrvIdList.get(i);
-                String[] arrStr = pathSrvId.split("#");
-                Log.d(TAG, "pathSrvId::"+pathSrvId);
-                //Get the callback only when the Arraylist's objPath matches with
-                //the servicePath in this function
-                if(arrStr[0] != null && arrStr[0].equalsIgnoreCase(servicePath)){
-                    Log.d(TAG, "The Arraylist's objPath matches with the servicePath in this functio"+
-                               "n");
-                    IBluetoothGattService callback = mGattServiceTracker.get(pathSrvId);
-                    if (callback != null) {
-                        Log.d(TAG, "CallBack retrieved");
-                        String[]  charPaths = null;
-                        if (result)
-                            charPaths = getCharacteristicsFromCache(servicePath);
-                        try {
-                            callback.onCharacteristicsDiscovered(charPaths, result);
-                            objPathSrvIdList.remove(i);
-                        } catch (Exception e) {
-                            Log.e(TAG, "", e);
-                            forceCloseGattService(servicePath, Integer.parseInt(index));
-                        }
-                    } else
-                        Log.d(TAG, "Discover Characteristics Callback for  service " + servicePath +
-" not queued");
-                }
+        Log.d(TAG, "makeDiscoverCharacteristicsCallback for service: " + servicePath);
+
+        if (callback != null) {
+            String[]  charPaths = null;
+            if (result)
+                charPaths = getCharacteristicsFromCache(servicePath);
+            try {
+                callback.onCharacteristicsDiscovered(charPaths, result);
+            } catch (Exception e) {
+                Log.e(TAG, "", e);
+                forceCloseGattService(servicePath);
             }
-            mGattOperationTracker.put("discoverChar", objPathSrvIdList);
-        }
+        } else
+            Log.d(TAG, "Discover Characteristics Callback for  service " + servicePath + " not queued");
+
     }
 
-    /*package*/ synchronized void makeSetCharacteristicPropertyCallback(
-        String charPath, String index, String property, boolean result) {
+    /*package*/ synchronized void makeSetCharacteristicPropertyCallback(String charPath, String property, boolean result) {
         Log.d(TAG, "makeSetCharacteristicPropertyCallback for char: " + charPath);
 
         if (charPath == null) {
@@ -4540,14 +4515,14 @@ public class BluetoothService extends IBluetooth.Stub {
             return;
         }
 
-        IBluetoothGattService callback = mGattServiceTracker.get(servicePath+"#"+index);
+        IBluetoothGattService callback = mGattServiceTracker.get(servicePath);
 
         if (callback != null) {
             try {
                 callback.onSetCharacteristicProperty(charPath, property, result);
             }  catch (Exception e) {
                 Log.e(TAG, "", e);
-                forceCloseGattService(servicePath, Integer.parseInt(index));
+                forceCloseGattService(servicePath);
             }
 
         } else
@@ -4569,29 +4544,21 @@ public class BluetoothService extends IBluetooth.Stub {
 
         Log.d(TAG, "WatcherValueChanged : service Path = " + servicePath);
 
-        HashMap<Integer, IBluetoothGattService> callbacks = mGattWatcherTracker.get(servicePath);
+        IBluetoothGattService callback = mGattWatcherTracker.get(servicePath);
 
-        if (callbacks != null) {
-            Log.d(TAG, "Watcher services exist for the path " + servicePath);
+        if (callback != null) {
             try {
-                for(Map.Entry<Integer, IBluetoothGattService> entry : callbacks.entrySet()) {
-                    IBluetoothGattService callback = entry.getValue();
-                    if(callback != null) {
-                        Log.d(TAG, "Calling on onValueChanged for : " + callback);
-                        callback.onValueChanged(charPath, value);
-                    }
-                }
+                callback.onValueChanged(charPath, value);
             } catch (Exception e) {
                 Log.e(TAG, "", e);
-                forceCloseGattService(servicePath, -1);
+                forceCloseGattService(servicePath);
             }
         } else {
             Log.d(TAG, "Callback for service " + servicePath + " not registered");
         }
     }
 
-    /*package*/ synchronized void makeUpdateCharacteristicValueCallback(
-        String charPath, String index, boolean result) {
+    /*package*/ synchronized void makeUpdateCharacteristicValueCallback(String charPath, boolean result) {
 
         String servicePath = charPath.substring(0, charPath.indexOf("/characteristic"));
 
@@ -4599,7 +4566,7 @@ public class BluetoothService extends IBluetooth.Stub {
             return;
         }
 
-        IBluetoothGattService callback = mGattServiceTracker.get(servicePath+"#"+index);
+        IBluetoothGattService callback = mGattServiceTracker.get(servicePath);
 
         Log.d(TAG, "makeCharacteristicValueUpdatedCallback for service: " + charPath);
 
@@ -4608,7 +4575,7 @@ public class BluetoothService extends IBluetooth.Stub {
                 callback.onCharacteristicValueUpdated(charPath, result);
             } catch (Exception e) {
                 Log.e(TAG, "", e);
-                forceCloseGattService(servicePath, Integer.parseInt(index));
+                forceCloseGattService(servicePath);
             }
         } else {
             Log.d(TAG, "Callback for service " + servicePath + " not registered");
@@ -4704,56 +4671,19 @@ public class BluetoothService extends IBluetooth.Stub {
         return true;
     }
 
-    public synchronized boolean discoverCharacteristics(String path, int serviceId) {
-        mContext.enforceCallingOrSelfPermission(BLUETOOTH_PERM, "Need BLUETOOTH permission");
-         if (!isEnabledInternal()) return false;
+    public synchronized boolean discoverCharacteristics(String path) {
+       mContext.enforceCallingOrSelfPermission(BLUETOOTH_PERM, "Need BLUETOOTH permission");
+        if (!isEnabledInternal()) return false;
 
-         Log.d(TAG, "discoverCharacteristics Id : " + serviceId);
-         Log.d(TAG, "path : " + path);
+        Log.d(TAG, "discoverCharacteristics");
 
-        if (!mGattServices.containsKey(path)) {
-             Log.d(TAG, "Service not present " + path);
-             return false;
-         }
-
-        boolean ret = false;
-        ArrayList<String> objPathSrvIdList = mGattOperationTracker.get("discoverChar");
-        String pathSrvId = path+"#"+Integer.toString(serviceId);
-        if(objPathSrvIdList != null && (objPathSrvIdList.size() > 0)) {
-            Log.d(TAG, "objPathSrvIdList not null");
-            Log.d(TAG, "objPathSrvIdList length:"+objPathSrvIdList.size());
-            for(int i=0;i < objPathSrvIdList.size();i++) {
-                String objSvId = objPathSrvIdList.get(i);
-                String[] arrStr = objSvId.split("#");
-                Log.d(TAG, "objSvId::"+objSvId);
-                if(arrStr[0] != null && !arrStr[0].equalsIgnoreCase(path)){
-                    //start discovery only when the srv path is not already registered for
-                    //discover char in mGattOperationTracker
-                    Log.d(TAG, "srv path is not already registered for discover char in mGattOperationTracker");
-                    if(serviceId >= 0) {
-                        Log.d(TAG, "Calling discoverCharacteristicsNative " + path + "#" +Integer.toString(serviceId));
-                        ret = discoverCharacteristicsNative(path, "#"+Integer.toString(serviceId));
-                    }
-                }
-                else {
-                    Log.d(TAG, "srv path is already registered for discover char in mGattOperationTracker. So will not call discover char again");
-                }
-                if(!objPathSrvIdList.contains(pathSrvId)) {
-                    objPathSrvIdList.add(pathSrvId);
-                }
-                mGattOperationTracker.put("discoverChar",objPathSrvIdList);
-            }
+       if (!mGattServices.containsKey(path)) {
+            Log.d(TAG, "Service not present " + path);
+            return false;
         }
-        else {
-            Log.d(TAG, "objPathSrvIdList is null");
-            objPathSrvIdList = new ArrayList<String>();
-            objPathSrvIdList.add(pathSrvId);
-            mGattOperationTracker.put("discoverChar",objPathSrvIdList);
-            if(serviceId >= 0) {
-                Log.d(TAG, "Calling discoverCharacteristicsNative " + path + "#" +Integer.toString(serviceId));
-                ret = discoverCharacteristicsNative(path, "#"+Integer.toString(serviceId));
-            }
-        }
+
+        boolean ret = discoverCharacteristicsNative(path);
+
         return ret;
     }
 
@@ -4836,7 +4766,7 @@ public class BluetoothService extends IBluetooth.Stub {
     }
 
     public synchronized boolean setCharacteristicProperty(String path, String key, byte[] value,
-            boolean reliable, int serviceId) {
+            boolean reliable) {
         mContext.enforceCallingOrSelfPermission(BLUETOOTH_PERM, "Need BLUETOOTH permission");
         if (!isEnabledInternal()) return false;
 
@@ -4855,18 +4785,12 @@ public class BluetoothService extends IBluetooth.Stub {
             return false;
         }
 
-        boolean ret = false;
-        if(serviceId >= 0) {
-             Log.d(TAG, "Calling setCharacteristicPropertyNative " + path + "#" +
-                   Integer.toString(serviceId));
-             ret = setCharacteristicPropertyNative(path, key, "#"+Integer.toString(serviceId), value,
-                                                   value.length, reliable);
-        }
+        boolean ret = setCharacteristicPropertyNative(path, key, value, value.length, reliable);
 
         return ret;
     }
 
-    public synchronized boolean updateCharacteristicValue(String path, int serviceId) {
+    public synchronized boolean updateCharacteristicValue(String path) {
         mContext.enforceCallingOrSelfPermission(BLUETOOTH_PERM, "Need BLUETOOTH permission");
         if (!isEnabledInternal()) return false;
 
@@ -4887,59 +4811,36 @@ public class BluetoothService extends IBluetooth.Stub {
             return false;
         }
 
-        boolean ret = false;
-        if(serviceId >= 0) {
-           Log.d(TAG, "Calling updateCharacteristicValueNative " + path + "#" +Integer.toString(serviceId));
-           ret = updateCharacteristicValueNative(path, "#"+Integer.toString(serviceId));
-        }
-
-        return ret;
+        return updateCharacteristicValueNative(path);
     }
 
-    public synchronized boolean registerCharacteristicsWatcher(String path,
-                                                               IBluetoothGattService gattCallback,
-                                                               int serviceId) {
+    public synchronized boolean registerCharacteristicsWatcher(String path, IBluetoothGattService gattCallback) {
        mContext.enforceCallingOrSelfPermission(BLUETOOTH_PERM, "Need BLUETOOTH permission");
         if (!isEnabledInternal()) return false;
 
         Log.d(TAG, "registerCharacteristicsWatcher");
-        boolean ret = false;
 
        if (!mGattServices.containsKey(path)) {
             Log.d(TAG, "Service not present " + path);
             return false;
         }
 
-       HashMap<Integer, IBluetoothGattService> watcherServices;
-       if (mGattWatcherTracker.containsKey(path)) {
-           Log.d(TAG, "Object path exists in the watcher tracker");
-           watcherServices = mGattWatcherTracker.get(path);
+        if (mGattWatcherTracker.get(path) != null) {
+            // Do not add this callback
+            Log.d(TAG, "registerCharacteristicsWatcher: already registered for " + path);
+            return false;
+        }
 
-           if(watcherServices.containsKey(serviceId)) {
-               // Do not add this callback
-               Log.d(TAG, "registerCharacteristicsWatcher: already registered for " + path);
-               return false;
-           }
-           watcherServices.put(new Integer(serviceId), gattCallback);
-           ret = true;
-       } else {
-           Log.d(TAG, "Create new watcher service");
-           watcherServices = new HashMap<Integer, IBluetoothGattService>();
-           ret = registerCharacteristicsWatcherNative(path);
+        boolean ret = registerCharacteristicsWatcherNative(path);
 
-           if (ret) {
-               Log.d(TAG, "wactcher registered successfully adding " +
-                     serviceId + " " + gattCallback);
-               watcherServices.put(new Integer(serviceId), gattCallback);
-           }
-       }
-
-       mGattWatcherTracker.put(path, watcherServices);
+        if (ret == true) {
+            mGattWatcherTracker.put(path, gattCallback);
+        }
 
         return ret;
    }
 
-    public synchronized boolean deregisterCharacteristicsWatcher(String path, int serviceId) {
+    public synchronized boolean deregisterCharacteristicsWatcher(String path) {
        mContext.enforceCallingOrSelfPermission(BLUETOOTH_PERM, "Need BLUETOOTH permission");
         if (!isEnabledInternal()) return false;
 
@@ -4950,56 +4851,26 @@ public class BluetoothService extends IBluetooth.Stub {
 
         Log.d(TAG, "deregisterCharacteristicsWatcher");
 
-        boolean ret = false;
+        boolean ret = deregisterCharacteristicsWatcherNative(path);
 
-        Log.d(TAG, "deregisterCharacteristicsWatcher id " + serviceId);
-        HashMap<Integer, IBluetoothGattService> watcherServices = mGattWatcherTracker.get(path);
-        if(watcherServices != null) {
-            if(watcherServices.size() == 1) {
-                Log.d(TAG, "Only watcher service..deregister");
-                ret = deregisterCharacteristicsWatcherNative(path);
-                mGattWatcherTracker.remove(path);
-            } else {
-                Log.d(TAG, "other watcher services exist for the obj path");
-                watcherServices.remove(new Integer(serviceId));
-                return true;
-            }
-        }
+        mGattWatcherTracker.remove(path);
 
         return ret;
     }
 
-    public synchronized int startRemoteGattService(String path, IBluetoothGattService gattCallback) {
+    public synchronized boolean startRemoteGattService(String path, IBluetoothGattService gattCallback) {
         mContext.enforceCallingOrSelfPermission(BLUETOOTH_PERM, "Need BLUETOOTH permission");
-        if (!isEnabledInternal()) return -1;
+        if (!isEnabledInternal()) return false;
 
         Log.d(TAG, "startRemoteGattService(");
-        int serviceId = -1;
 
-        Log.d(TAG, "add : " + gattCallback + "path" + path);
-        if(usedSrvIds != null) {
-            for(int i=1; i < 200; i++) {
-                if(!usedSrvIds.contains(new Integer(i))) {
-                    serviceId = i;
-                    break;
-                }
-            }
-        }
-        Log.d(TAG, "Service id for path "+path+" assigned is "+serviceId);
-        usedSrvIds.add(serviceId);
-
-        Log.d(TAG, "serviceId in startRemoteGattService"+serviceId);
-
-        String objPath = path + "#" + serviceId;
-        Log.d(TAG, "Add obj path to service tracker " + objPath + "size " + objPath.length());
-
-        if (mGattServiceTracker.get(objPath) != null) {
+        if (mGattServiceTracker.get(path) != null) {
             // Do not add this callback, its already there
             Log.d(TAG, "startRemoteGattService: callback already registered " + path);
-            return -1;
+            return false;
         }
 
-        mGattServiceTracker.put(objPath, gattCallback);
+        mGattServiceTracker.put(path, gattCallback);
 
         if (!mGattServices.containsKey(path))
             mGattServices.put(path, 1);
@@ -5010,10 +4881,10 @@ public class BluetoothService extends IBluetooth.Stub {
             mGattServices.put(path, refCount);
         }
 
-        return serviceId;
+        return true;
     }
 
-    private void clearGattService(String path, boolean flush, int serviceId) {
+    private void clearGattService(String path, boolean flush) {
 
         Map<String, String> properties = mGattProperties.get(path);
 
@@ -5031,35 +4902,18 @@ public class BluetoothService extends IBluetooth.Stub {
         if (flush)
             removeGattServiceProperties(path);
 
-        if(serviceId < 0) {
-            Log.d(TAG, "Clear all gatt services callback for the obj path " + path);
-            Iterator<Map.Entry<String, IBluetoothGattService>> it = mGattServiceTracker.entrySet().iterator();
-            while(it.hasNext()) {
-                Map.Entry<String, IBluetoothGattService> entry = it.next();
-                String objPath = entry.getKey();
-                String[] splits = objPath.split("#");
-                Log.d(TAG, "Splits " + splits[0]);
-                if(path.equals(splits[0])) {
-                    Log.d(TAG, "Remove matched path in service tracker " + splits[0]);
-                    it.remove();
-                }
-            }
-        } else {
-            Log.d(TAG, "Clear the gatt service callback for path : " + path);
-            mGattServiceTracker.remove(path);
-        }
-
+        mGattServiceTracker.remove(path);
         mGattWatcherTracker.remove(path);
     }
 
-    private void forceCloseGattService(String path, int serviceId) {
+    private void forceCloseGattService(String path) {
 
         Log.d(TAG, "Cleanup GATT service " + path);
-        clearGattService(path, false, serviceId);
+        clearGattService(path, false);
         mGattServices.remove(path);
     }
 
-    public synchronized void closeRemoteGattService(String path, int serviceId) {
+    public synchronized void closeRemoteGattService(String path) {
         mContext.enforceCallingOrSelfPermission(BLUETOOTH_PERM, "Need BLUETOOTH permission");
 
         if (!mGattServices.containsKey(path)) {
@@ -5071,11 +4925,6 @@ public class BluetoothService extends IBluetooth.Stub {
         refCount--;
 
         Log.d(TAG, "removeRemoteGattService: refCount for " + path + " is " + refCount);
-        String objPath = path + "#" + serviceId;
-        //Remove the service id from used srv ids list
-        usedSrvIds.remove(new Integer(serviceId));
-        mGattServiceTracker.remove(objPath);
-        Log.d(TAG, "Removing service Id "+serviceId+ "from used service list");
 
         if (refCount > 0) {
             mGattServices.remove(path);
@@ -5083,7 +4932,7 @@ public class BluetoothService extends IBluetooth.Stub {
             return;
         }
 
-        forceCloseGattService(path, serviceId);
+        forceCloseGattService(path);
 
         if (!isEnabledInternal()) return;
 
@@ -5144,7 +4993,7 @@ public class BluetoothService extends IBluetooth.Stub {
         services = value.split(",");
 
         for(int i = 0; i < services.length; i++)
-            clearGattService(services[i], true, -1);
+            clearGattService(services[i], true);
 
         setRemoteDeviceProperty(address, "Services", null);
     }
@@ -5668,7 +5517,7 @@ public class BluetoothService extends IBluetooth.Stub {
     native boolean discoverPrimaryServicesNative(String path);
     private native String createLeDeviceNative(String address);
     private native Object[] getGattServicePropertiesNative(String path);
-    private native boolean discoverCharacteristicsNative(String path, String data);
+    private native boolean discoverCharacteristicsNative(String path);
     private native int gattConnectNative(String path, int prohibitRemoteChg, int filterPolicy,
                                              int scanInterval, int scanWindow, int intervalMin,
                                              int intervalMax, int latency, int superVisionTimeout,
@@ -5680,9 +5529,8 @@ public class BluetoothService extends IBluetooth.Stub {
                                              int minCeLen, int maxCeLen, int connTimeOut);
     private native boolean gattLeConnectCancelNative(String path);
     private native Object[] getCharacteristicPropertiesNative(String path);
-    private native boolean setCharacteristicPropertyNative(String path, String key, String serviceId,
-                                                           byte[] value, int length, boolean reliable);
-    private native boolean updateCharacteristicValueNative(String path, String serviceId);
+    private native boolean setCharacteristicPropertyNative(String path, String key, byte[] value, int length, boolean reliable);
+    private native boolean updateCharacteristicValueNative(String path);
     private native boolean registerCharacteristicsWatcherNative(String path);
     private native boolean deregisterCharacteristicsWatcherNative(String path);
     private native boolean disconnectGattNative(String path);

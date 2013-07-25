@@ -1450,22 +1450,19 @@ class BluetoothEventLoop {
 
     private void onDiscoverCharacteristicsResult(String serviceObjectPath, boolean result) {
 
-        Log.d(TAG, "onDiscoverCharacteristicsResult: " + result  + "path " + serviceObjectPath);
-        String[] callbackData = serviceObjectPath.split("#");
+        Log.d(TAG, "onDiscoverCharacteristicsResult: " + result);
 
         if (result) {
-            Log.d(TAG, "updateGattServicePropertiesCache " + callbackData[0]);
-            mBluetoothService.updateGattServicePropertiesCache(callbackData[0]);
+            mBluetoothService.updateGattServicePropertiesCache(serviceObjectPath);
         }
-        mBluetoothService.makeDiscoverCharacteristicsCallback(callbackData[0], callbackData[1], result);
+        mBluetoothService.makeDiscoverCharacteristicsCallback(serviceObjectPath, result);
     }
 
     private void onSetCharacteristicPropertyResult(String path, String property, boolean result) {
 
         Log.d(TAG, "onSetCharPropResult path " + path + " property = " + property);
-        Log.d(TAG, "Path : " + path + "Result = " + result);
-        String[] callbackData = path.split("#");
-        mBluetoothService.makeSetCharacteristicPropertyCallback(callbackData[0], callbackData[1], property, result);
+        Log.d(TAG, "Result = " + result);
+        mBluetoothService.makeSetCharacteristicPropertyCallback(path, property, result);
     }
 
     private void onIndicateResponse(String path, boolean result) {
@@ -1482,10 +1479,8 @@ class BluetoothEventLoop {
     }
 
     private void onUpdateCharacteristicValueResult(String charObjectPath, boolean result) {
-        Log.d(TAG, "onUpdateCharacteristicValueResult: " + result + "path " + charObjectPath);
-        String[] callbackData = charObjectPath.split("#");
 
-        mBluetoothService.makeUpdateCharacteristicValueCallback(callbackData[0], callbackData[1], result);
+        mBluetoothService.makeUpdateCharacteristicValueCallback(charObjectPath, result);
     }
 
     private void onGattDiscoverPrimaryRequest(String gattObjectPath, int start, int end, int reqHandle) {

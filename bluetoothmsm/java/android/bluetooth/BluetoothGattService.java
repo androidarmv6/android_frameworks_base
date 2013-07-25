@@ -40,7 +40,6 @@ public class BluetoothGattService {
     private static final String TAG = "BluetoothGattService";
     private ParcelUuid mUuid;
     private String mObjPath;
-    private int mServiceId;
     private BluetoothDevice mDevice;
     private String mName = null;
     private boolean watcherRegistered = false;
@@ -359,7 +358,7 @@ public class BluetoothGattService {
 
         try {
             mClosed = true;
-            mService.closeRemoteGattService(mObjPath, mServiceId);
+            mService.closeRemoteGattService(mObjPath);
         } finally {
             mLock.writeLock().unlock();
         }
@@ -449,7 +448,7 @@ public class BluetoothGattService {
             setDiscoveryState(DISCOVERY_IN_PROGRESS);
 
             try {
-                return mService.discoverCharacteristics(mObjPath, mServiceId);
+                return mService.discoverCharacteristics(mObjPath);
             } catch (RemoteException e) {Log.e(TAG, "", e);}
 
             return false;
@@ -460,14 +459,7 @@ public class BluetoothGattService {
             setDiscoveryState(DISCOVERY_NONE);
 
             try {
-                int servId = mService.startRemoteGattService(mObjPath, this);
-                if(servId >= 0) {
-                    Log.d(TAG, "Received service id :" + servId);
-                    mServiceId = servId;
-                } else {
-                    Log.d(TAG, "Error while starting remote gatt service");
-                    return;
-                }
+                mService.startRemoteGattService(mObjPath, this);
 
                 int state = mService.getBondState(mDevice.getAddress());
                 Log.d(TAG, "Bond state of remote device : " + mDevice.getAddress() + " is " + state);
@@ -620,7 +612,7 @@ public class BluetoothGattService {
                 byte[] value, boolean reliable) {
             Log.d(TAG, "setCharacteristicProperty");
             try {
-                return mService.setCharacteristicProperty(path, key, value, reliable, mServiceId);
+                return mService.setCharacteristicProperty(path, key, value, reliable);
             } catch (RemoteException e) {Log.e(TAG, "", e);}
 
             return false;
@@ -656,7 +648,7 @@ public class BluetoothGattService {
 
         public synchronized boolean fetchCharValue(String path) {
             try {
-                return mService.updateCharacteristicValue(path, mServiceId);
+                return mService.updateCharacteristicValue(path);
             } catch (RemoteException e) {Log.e(TAG, "", e);}
 
             return false;
@@ -666,9 +658,7 @@ public class BluetoothGattService {
             Log.d(TAG, "registerCharacteristicsWatcher: ");
 
             try {
-                if (mService.registerCharacteristicsWatcher(mObjPath,
-                                                            this,
-                                                            mServiceId) == true) {
+                if (mService.registerCharacteristicsWatcher(mObjPath, this) == true) {
                     return true;
                 }
             } catch (RemoteException e) {Log.e(TAG, "", e);}
@@ -679,7 +669,7 @@ public class BluetoothGattService {
         public synchronized boolean deregisterCharacteristicsWatcher() {
             Log.d(TAG, "deregisterCharacteristicsWatcher: ");
             try {
-               return mService.deregisterCharacteristicsWatcher(mObjPath, mServiceId);
+               return mService.deregisterCharacteristicsWatcher(mObjPath);
              } catch (RemoteException e) {Log.e(TAG, "", e);}
             return false;
         }
