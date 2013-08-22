@@ -18,8 +18,11 @@
 package android.app;
 
 import android.app.ITransientNotification;
+import android.service.notification.StatusBarNotification;
 import android.app.Notification;
+import android.content.ComponentName;
 import android.content.Intent;
+import android.service.notification.INotificationListener;
 
 /** {@hide} */
 interface INotificationManager
@@ -34,5 +37,22 @@ interface INotificationManager
 
     void setNotificationsEnabledForPackage(String pkg, boolean enabled);
     boolean areNotificationsEnabledForPackage(String pkg);
-}
 
+    StatusBarNotification[] getActiveNotifications(String callingPkg);
+    StatusBarNotification[] getHistoricalNotifications(String callingPkg, int count);
+
+    void registerListener(in INotificationListener listener, in ComponentName component, int userid);
+    void unregisterListener(in INotificationListener listener, int userid);
+
+    void cancelNotificationFromListener(in INotificationListener token, String pkg, String tag, int id);
+    void cancelAllNotificationsFromListener(in INotificationListener token);
+
+    StatusBarNotification[] getActiveNotificationsFromListener(in INotificationListener token);
+
+    void setHaloPolicyBlack(boolean state);
+    void setHaloStatus(String pkg, boolean status);
+    void setHaloBlacklistStatus(String pkg, boolean status);
+    void setHaloWhitelistStatus(String pkg, boolean status);
+    boolean isHaloPolicyBlack();
+    boolean isPackageAllowedForHalo(String pkg);    
+}
