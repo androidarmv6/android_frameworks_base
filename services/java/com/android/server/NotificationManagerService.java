@@ -23,6 +23,7 @@ import static org.xmlpull.v1.XmlPullParser.START_TAG;
 import android.app.ActivityManager;
 import android.app.ActivityManagerNative;
 import android.app.AppGlobals;
+import android.app.AppOpsManager;
 import android.app.IActivityManager;
 import android.app.INotificationManager;
 import android.app.ITransientNotification;
@@ -32,15 +33,21 @@ import android.app.ProfileGroup;
 import android.app.ProfileManager;
 import android.app.StatusBarManager;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.content.pm.ResolveInfo;
+import android.content.pm.ServiceInfo;
 import android.content.res.Resources;
 import android.database.ContentObserver;
+import android.graphics.Bitmap;
 import android.media.AudioManager;
 import android.media.IAudioService;
 import android.media.IRingtonePlayer;
@@ -53,8 +60,12 @@ import android.os.Process;
 import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.os.UserHandle;
+import android.os.UserManager;
 import android.os.Vibrator;
 import android.provider.Settings;
+import android.service.notification.INotificationListener;
+import android.service.notification.NotificationListenerService;
+import android.service.notification.StatusBarNotification;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.AtomicFile;
@@ -80,12 +91,18 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.reflect.Array;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Set;
 
 import libcore.io.IoUtils;
 
@@ -177,63 +194,126 @@ public class NotificationManagerService extends INotificationManager.Stub
     private boolean mQuietHoursDim = true;
 
     // Notification control database. For now just contains disabled packages.
-    private AtomicFile mPolicyFile;
+    private AtomicFile mPolicyFile, mHaloPolicyFile; 
     private HashSet<String> mBlockedPackages = new HashSet<String>();
+    private HashSet<String> mHaloBlacklist = new HashSet<String>();
+    private HashSet<String> mHaloWhitelist = new HashSet<String>();
+    private boolean mHaloPolicyisBlack = true; 
 
     private static final int DB_VERSION = 1;
 
     private static final String TAG_BODY = "notification-policy";
     private static final String ATTR_VERSION = "version";
+    private static final String ATTR_HALO_POLICY_IS_BLACK = "policy_is_black"; 
 
+    private static final String TAG_ALLOWED_PKGS = "allowed-packages"; 
     private static final String TAG_BLOCKED_PKGS = "blocked-packages";
     private static final String TAG_PACKAGE = "package";
     private static final String ATTR_NAME = "name";
 
-    private void loadBlockDb() {
-        synchronized(mBlockedPackages) {
-            if (mPolicyFile == null) {
-                File dir = new File("/data/system");
-                mPolicyFile = new AtomicFile(new File(dir, "notification_policy.xml"));
+    private int readPolicy(AtomicFile file, String lookUpTag, HashSet<String> db) {
+        return readPolicy(file, lookUpTag, db, null, 0);
+    } 
 
-                mBlockedPackages.clear();
+    private int readPolicy(AtomicFile file, String lookUpTag, HashSet<String> db, String resultTag, int defaultResult) {
+        int result = defaultResult;
+        FileInputStream infile = null;
+        try {
+            infile = file.openRead();
+            final XmlPullParser parser = Xml.newPullParser();
+            parser.setInput(infile, null);
 
-                FileInputStream infile = null;
-                try {
-                    infile = mPolicyFile.openRead();
-                    final XmlPullParser parser = Xml.newPullParser();
-                    parser.setInput(infile, null);
-
-                    int type;
-                    String tag;
-                    int version = DB_VERSION;
-                    while ((type = parser.next()) != END_DOCUMENT) {
-                        tag = parser.getName();
-                        if (type == START_TAG) {
-                            if (TAG_BODY.equals(tag)) {
-                                version = Integer.parseInt(parser.getAttributeValue(null, ATTR_VERSION));
-                            } else if (TAG_BLOCKED_PKGS.equals(tag)) {
-                                while ((type = parser.next()) != END_DOCUMENT) {
-                                    tag = parser.getName();
-                                    if (TAG_PACKAGE.equals(tag)) {
-                                        mBlockedPackages.add(parser.getAttributeValue(null, ATTR_NAME));
-                                    } else if (TAG_BLOCKED_PKGS.equals(tag) && type == END_TAG) {
-                                        break;
-                                    }
-                                }
+            int type;
+            String tag;
+            int version = DB_VERSION;
+            while ((type = parser.next()) != END_DOCUMENT) {
+                tag = parser.getName();
+                if (type == START_TAG) {
+                    if (TAG_BODY.equals(tag)) {
+                        version = Integer.parseInt(parser.getAttributeValue(null, ATTR_VERSION));
+                        if (resultTag != null) {
+                            String attribValue = parser.getAttributeValue(null, resultTag);
+                            result = Integer.parseInt((attribValue != null ? attribValue : "0"));
+                        }
+                    } else if (lookUpTag.equals(tag)) {
+                        while ((type = parser.next()) != END_DOCUMENT) {
+                            tag = parser.getName();
+                            if (TAG_PACKAGE.equals(tag)) {
+                                db.add(parser.getAttributeValue(null, ATTR_NAME));
+                            } else if (lookUpTag.equals(tag) && type == END_TAG) {
+                                break; 
                             }
                         }
                     }
-                } catch (FileNotFoundException e) {
-                    // No data yet
-                } catch (IOException e) {
-                    Log.wtf(TAG, "Unable to read blocked notifications database", e);
-                } catch (NumberFormatException e) {
-                    Log.wtf(TAG, "Unable to parse blocked notifications database", e);
-                } catch (XmlPullParserException e) {
-                    Log.wtf(TAG, "Unable to parse blocked notifications database", e);
-                } finally {
-                    IoUtils.closeQuietly(infile);
-                }
+		}
+	    }
+        } catch (Exception e) {
+            // Unable to read
+        } finally {
+            IoUtils.closeQuietly(infile);
+        }
+        return result;
+    }
+
+    private void loadBlockDb() {
+        synchronized(mBlockedPackages) {
+            if (mPolicyFile == null) {
+                mPolicyFile = new AtomicFile(new File("/data/system", "notification_policy.xml"));
+                mBlockedPackages.clear();
+                readPolicy(mPolicyFile, TAG_BLOCKED_PKGS, mBlockedPackages);
+
+            }
+        }
+    }
+
+    private synchronized void loadHaloBlockDb() {
+        if (mHaloPolicyFile == null) {
+            mHaloPolicyFile = new AtomicFile(new File("/data/system", "halo_policy.xml"));
+            mHaloBlacklist.clear();
+            mHaloPolicyisBlack = readPolicy(mHaloPolicyFile, TAG_BLOCKED_PKGS, mHaloBlacklist, ATTR_HALO_POLICY_IS_BLACK, 1) == 1;
+            mHaloWhitelist.clear();
+            readPolicy(mHaloPolicyFile, TAG_ALLOWED_PKGS, mHaloWhitelist);
+        }
+    } 
+
+    private synchronized void writeHaloBlockDb() {
+        FileOutputStream outfile = null;
+        try {
+            outfile = mHaloPolicyFile.startWrite();
+
+            XmlSerializer out = new FastXmlSerializer();
+            out.setOutput(outfile, "utf-8");
+
+            out.startDocument(null, true);
+
+            out.startTag(null, TAG_BODY); {
+                out.attribute(null, ATTR_VERSION, String.valueOf(DB_VERSION));
+                out.attribute(null, ATTR_HALO_POLICY_IS_BLACK, (mHaloPolicyisBlack ? "1" : "0"));
+
+                    out.startTag(null, TAG_BLOCKED_PKGS); {
+                        for (String blockedPkg : mHaloBlacklist) {
+                            out.startTag(null, TAG_PACKAGE); {
+                                out.attribute(null, ATTR_NAME, blockedPkg);
+                            } out.endTag(null, TAG_PACKAGE);
+                        }
+                    } out.endTag(null, TAG_BLOCKED_PKGS);
+                    
+                    out.startTag(null, TAG_ALLOWED_PKGS); {
+                        for (String allowedPkg : mHaloWhitelist) {
+                            out.startTag(null, TAG_PACKAGE); {
+                                out.attribute(null, ATTR_NAME, allowedPkg);
+                            } out.endTag(null, TAG_PACKAGE);
+                        }
+                    } out.endTag(null, TAG_ALLOWED_PKGS);
+
+            } out.endTag(null, TAG_BODY);
+
+            out.endDocument();
+
+            mHaloPolicyFile.finishWrite(outfile);
+        } catch (IOException e) {
+            if (outfile != null) {
+                mHaloPolicyFile.failWrite(outfile);
             }
         }
     }
@@ -243,7 +323,6 @@ public class NotificationManagerService extends INotificationManager.Stub
             FileOutputStream outfile = null;
             try {
                 outfile = mPolicyFile.startWrite();
-
                 XmlSerializer out = new FastXmlSerializer();
                 out.setOutput(outfile, "utf-8");
 
@@ -272,6 +351,52 @@ public class NotificationManagerService extends INotificationManager.Stub
         }
     }
 
+    public void setHaloPolicyBlack(boolean state) {
+        mHaloPolicyisBlack = state;
+        writeHaloBlockDb();
+    }
+
+    public void setHaloStatus(String pkg, boolean status) {
+        if (mHaloPolicyisBlack) {
+            setHaloBlacklistStatus(pkg, status);
+        } else {
+            setHaloWhitelistStatus(pkg, status);
+        }
+    }
+
+    public void setHaloBlacklistStatus(String pkg, boolean status) {
+        if (status) {
+            mHaloBlacklist.add(pkg);            
+        } else {
+            mHaloBlacklist.remove(pkg);
+        }
+        writeHaloBlockDb();
+    }
+
+    public void setHaloWhitelistStatus(String pkg, boolean status) {
+        if (status) {
+            mHaloWhitelist.add(pkg);            
+        } else {
+            mHaloWhitelist.remove(pkg);
+        }
+        writeHaloBlockDb();
+    }
+
+    public boolean isHaloPolicyBlack() {
+        return mHaloPolicyisBlack;
+    }
+
+    public boolean isPackageAllowedForHalo(String pkg) {
+        if (mHaloPolicyisBlack) {
+            return !mHaloBlacklist.contains(pkg);
+        } else {
+            return mHaloWhitelist.contains(pkg);
+        }
+    } 
+
+    /**
+     * Use this when you just want to know if notifications are OK for this package.
+     */
     public boolean areNotificationsEnabledForPackage(String pkg) {
         checkCallerIsSystem();
         return areNotificationsEnabledForPackageInt(pkg);
@@ -339,7 +464,432 @@ public class NotificationManagerService extends INotificationManager.Stub
         }
     }
 
-    private static final class NotificationRecord
+    /**
+     * System-only API for getting a list of current (i.e. not cleared) notifications.
+     *
+     * Requires ACCESS_NOTIFICATIONS which is signature|system.
+     */
+    @Override
+    public StatusBarNotification[] getActiveNotifications(String callingPkg) {
+        // enforce() will ensure the calling uid has the correct permission
+        mContext.enforceCallingOrSelfPermission(android.Manifest.permission.ACCESS_NOTIFICATIONS,
+                "NotificationManagerService.getActiveNotifications");
+
+        StatusBarNotification[] tmp = null;
+        int uid = Binder.getCallingUid();
+
+        // noteOp will check to make sure the callingPkg matches the uid
+        if (mAppOps.noteOpNoThrow(AppOpsManager.OP_ACCESS_NOTIFICATIONS, uid, callingPkg)
+                == AppOpsManager.MODE_ALLOWED) {
+            synchronized (mNotificationList) {
+                tmp = new StatusBarNotification[mNotificationList.size()];
+                final int N = mNotificationList.size();
+                for (int i=0; i<N; i++) {
+                    tmp[i] = mNotificationList.get(i).sbn;
+                }
+            }
+        }
+        return tmp;
+    }
+
+    /**
+     * System-only API for getting a list of recent (cleared, no longer shown) notifications.
+     *
+     * Requires ACCESS_NOTIFICATIONS which is signature|system.
+     */
+    @Override
+    public StatusBarNotification[] getHistoricalNotifications(String callingPkg, int count) {
+        // enforce() will ensure the calling uid has the correct permission
+        mContext.enforceCallingOrSelfPermission(android.Manifest.permission.ACCESS_NOTIFICATIONS,
+                "NotificationManagerService.getHistoricalNotifications");
+
+        StatusBarNotification[] tmp = null;
+        int uid = Binder.getCallingUid();
+
+        // noteOp will check to make sure the callingPkg matches the uid
+        if (mAppOps.noteOpNoThrow(AppOpsManager.OP_ACCESS_NOTIFICATIONS, uid, callingPkg)
+                == AppOpsManager.MODE_ALLOWED) {
+            synchronized (mArchive) {
+                tmp = mArchive.getArray(count);
+            }
+        }
+        return tmp;
+    }
+
+    /**
+     * Remove notification access for any services that no longer exist.
+     */
+    void disableNonexistentListeners() {
+        int currentUser = ActivityManager.getCurrentUser();
+        String flatIn = Settings.Secure.getStringForUser(
+                mContext.getContentResolver(),
+                Settings.Secure.ENABLED_NOTIFICATION_LISTENERS,
+                currentUser);
+        if (!TextUtils.isEmpty(flatIn)) {
+            if (DBG) Slog.v(TAG, "flat before: " + flatIn);
+            PackageManager pm = mContext.getPackageManager();
+            List<ResolveInfo> installedServices = pm.queryIntentServicesAsUser(
+                    new Intent(NotificationListenerService.SERVICE_INTERFACE),
+                    PackageManager.GET_SERVICES | PackageManager.GET_META_DATA,
+                    currentUser);
+
+            Set<ComponentName> installed = new HashSet<ComponentName>();
+            for (int i = 0, count = installedServices.size(); i < count; i++) {
+                ResolveInfo resolveInfo = installedServices.get(i);
+                ServiceInfo info = resolveInfo.serviceInfo;
+
+                if (!android.Manifest.permission.BIND_NOTIFICATION_LISTENER_SERVICE.equals(
+                                info.permission)) {
+                    Slog.w(TAG, "Skipping notification listener service "
+                            + info.packageName + "/" + info.name
+                            + ": it does not require the permission "
+                            + android.Manifest.permission.BIND_NOTIFICATION_LISTENER_SERVICE);
+                    continue;
+                }
+                installed.add(new ComponentName(info.packageName, info.name));
+            }
+
+            String flatOut = "";
+            if (!installed.isEmpty()) {
+                String[] enabled = flatIn.split(ENABLED_NOTIFICATION_LISTENERS_SEPARATOR);
+                ArrayList<String> remaining = new ArrayList<String>(enabled.length);
+                for (int i = 0; i < enabled.length; i++) {
+                    ComponentName enabledComponent = ComponentName.unflattenFromString(enabled[i]);
+                    if (installed.contains(enabledComponent)) {
+                        remaining.add(enabled[i]);
+                    }
+                }
+                flatOut = TextUtils.join(ENABLED_NOTIFICATION_LISTENERS_SEPARATOR, remaining);
+            }
+            if (DBG) Slog.v(TAG, "flat after: " + flatOut);
+            if (!flatIn.equals(flatOut)) {
+                Settings.Secure.putStringForUser(mContext.getContentResolver(),
+                        Settings.Secure.ENABLED_NOTIFICATION_LISTENERS,
+                        flatOut, currentUser);
+            }
+        }
+    }
+
+    /**
+     * Called whenever packages change, the user switches, or ENABLED_NOTIFICATION_LISTENERS
+     * is altered. (For example in response to USER_SWITCHED in our broadcast receiver)
+     */
+    void rebindListenerServices() {
+        final int currentUser = ActivityManager.getCurrentUser();
+        String flat = Settings.Secure.getStringForUser(
+                mContext.getContentResolver(),
+                Settings.Secure.ENABLED_NOTIFICATION_LISTENERS,
+                currentUser);
+
+        NotificationListenerInfo[] toRemove = new NotificationListenerInfo[mListeners.size()];
+        final ArrayList<ComponentName> toAdd;
+
+        synchronized (mNotificationList) {
+            // unbind and remove all existing listeners
+            toRemove = mListeners.toArray(toRemove);
+
+            toAdd = new ArrayList<ComponentName>();
+            final HashSet<ComponentName> newEnabled = new HashSet<ComponentName>();
+            final HashSet<String> newPackages = new HashSet<String>();
+
+            // decode the list of components
+            if (flat != null) {
+                String[] components = flat.split(ENABLED_NOTIFICATION_LISTENERS_SEPARATOR);
+                for (int i=0; i<components.length; i++) {
+                    final ComponentName component
+                            = ComponentName.unflattenFromString(components[i]);
+                    if (component != null) {
+                        newEnabled.add(component);
+                        toAdd.add(component);
+                        newPackages.add(component.getPackageName());
+                    }
+                }
+
+                mEnabledListenersForCurrentUser = newEnabled;
+                mEnabledListenerPackageNames = newPackages;
+            }
+        }
+
+        for (NotificationListenerInfo info : toRemove) {
+            final ComponentName component = info.component;
+            final int oldUser = info.userid;
+            Slog.v(TAG, "disabling notification listener for user " + oldUser + ": " + component);
+            // Do not un-register HALO, we un-register only when HALO is closed
+            if (!component.getPackageName().equals("HaloComponent")) unregisterListenerService(component, info.userid);
+        }
+
+        final int N = toAdd.size();
+        for (int i=0; i<N; i++) {
+            final ComponentName component = toAdd.get(i);
+            Slog.v(TAG, "enabling notification listener for user " + currentUser + ": "
+                    + component);
+            registerListenerService(component, currentUser);
+        }
+    }
+
+    /**
+     * Register a listener binder directly with the notification manager.
+     *
+     * Only works with system callers. Apps should extend
+     * {@link android.service.notification.NotificationListenerService}.
+     */
+    @Override
+    public void registerListener(final INotificationListener listener,
+            final ComponentName component, final int userid) {
+
+        if (!component.getPackageName().equals("HaloComponent")) checkCallerIsSystem();
+
+        synchronized (mNotificationList) {
+            try {
+                NotificationListenerInfo info
+                        = new NotificationListenerInfo(listener, component, userid, true);
+                listener.asBinder().linkToDeath(info, 0);
+                mListeners.add(info);
+            } catch (RemoteException e) {
+                // already dead
+            }
+        }
+    }
+
+    /**
+     * Version of registerListener that takes the name of a
+     * {@link android.service.notification.NotificationListenerService} to bind to.
+     *
+     * This is the mechanism by which third parties may subscribe to notifications.
+     */
+    private void registerListenerService(final ComponentName name, final int userid) {
+        checkCallerIsSystem();
+
+        if (DBG) Slog.v(TAG, "registerListenerService: " + name + " u=" + userid);
+
+        synchronized (mNotificationList) {
+            final String servicesBindingTag = name.toString() + "/" + userid;
+            if (mServicesBinding.contains(servicesBindingTag)) {
+                // stop registering this thing already! we're working on it
+                return;
+            }
+            mServicesBinding.add(servicesBindingTag);
+
+            final int N = mListeners.size();
+            for (int i=N-1; i>=0; i--) {
+                final NotificationListenerInfo info = mListeners.get(i);
+                if (name.equals(info.component)
+                        && info.userid == userid) {
+                    // cut old connections
+                    if (DBG) Slog.v(TAG, "    disconnecting old listener: " + info.listener);
+                    mListeners.remove(i);
+                    if (info.connection != null) {
+                        mContext.unbindService(info.connection);
+                    }
+                }
+            }
+
+            Intent intent = new Intent(NotificationListenerService.SERVICE_INTERFACE);
+            intent.setComponent(name);
+
+            intent.putExtra(Intent.EXTRA_CLIENT_LABEL,
+                    com.android.internal.R.string.notification_listener_binding_label);
+            intent.putExtra(Intent.EXTRA_CLIENT_INTENT, PendingIntent.getActivity(
+                    mContext, 0, new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS), 0));
+
+            try {
+                if (DBG) Slog.v(TAG, "binding: " + intent);
+                if (!mContext.bindServiceAsUser(intent,
+                        new ServiceConnection() {
+                            INotificationListener mListener;
+                            @Override
+                            public void onServiceConnected(ComponentName name, IBinder service) {
+                                synchronized (mNotificationList) {
+                                    mServicesBinding.remove(servicesBindingTag);
+                                    try {
+                                        mListener = INotificationListener.Stub.asInterface(service);
+                                        NotificationListenerInfo info = new NotificationListenerInfo(
+                                                mListener, name, userid, this);
+                                        service.linkToDeath(info, 0);
+                                        mListeners.add(info);
+                                    } catch (RemoteException e) {
+                                        // already dead
+                                    }
+                                }
+                            }
+
+                            @Override
+                            public void onServiceDisconnected(ComponentName name) {
+                                Slog.v(TAG, "notification listener connection lost: " + name);
+                            }
+                        },
+                        Context.BIND_AUTO_CREATE,
+                        new UserHandle(userid)))
+                {
+                    mServicesBinding.remove(servicesBindingTag);
+                    Slog.w(TAG, "Unable to bind listener service: " + intent);
+                    return;
+                }
+            } catch (SecurityException ex) {
+                Slog.e(TAG, "Unable to bind listener service: " + intent, ex);
+                return;
+            }
+        }
+    }
+
+    /**
+     * Remove a listener binder directly
+     */
+    @Override
+    public void unregisterListener(INotificationListener listener, int userid) {
+        // no need to check permissions; if your listener binder is in the list,
+        // that's proof that you had permission to add it in the first place
+
+        synchronized (mNotificationList) {
+            final int N = mListeners.size();
+            for (int i=N-1; i>=0; i--) {
+                final NotificationListenerInfo info = mListeners.get(i);
+                if (info.listener.asBinder() == listener.asBinder()
+                        && info.userid == userid) {
+                    mListeners.remove(i);
+                    if (info.connection != null) {
+                        mContext.unbindService(info.connection);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Remove a listener service for the given user by ComponentName
+     */
+    private void unregisterListenerService(ComponentName name, int userid) {
+        checkCallerIsSystem();
+
+        synchronized (mNotificationList) {
+            final int N = mListeners.size();
+            for (int i=N-1; i>=0; i--) {
+                final NotificationListenerInfo info = mListeners.get(i);
+                if (name.equals(info.component)
+                        && info.userid == userid) {
+                    mListeners.remove(i);
+                    if (info.connection != null) {
+                        try {
+                            mContext.unbindService(info.connection);
+                        } catch (IllegalArgumentException ex) {
+                            // something happened to the service: we think we have a connection
+                            // but it's bogus.
+                            Slog.e(TAG, "Listener " + name + " could not be unbound: " + ex);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * asynchronously notify all listeners about a new notification
+     */
+    private void notifyPostedLocked(NotificationRecord n) {
+        // make a copy in case changes are made to the underlying Notification object
+        final StatusBarNotification sbn = n.sbn.clone();
+        for (final NotificationListenerInfo info : mListeners) {
+            mHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    info.notifyPostedIfUserMatch(sbn);
+                }});
+        }
+    }
+
+    /**
+     * asynchronously notify all listeners about a removed notification
+     */
+    private void notifyRemovedLocked(NotificationRecord n) {
+        // make a copy in case changes are made to the underlying Notification object
+        // NOTE: this copy is lightweight: it doesn't include heavyweight parts of the notification
+        final StatusBarNotification sbn_light = n.sbn.cloneLight();
+
+        for (final NotificationListenerInfo info : mListeners) {
+            mHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    info.notifyRemovedIfUserMatch(sbn_light);
+                }});
+        }
+    }
+
+    // -- APIs to support listeners clicking/clearing notifications --
+
+    private NotificationListenerInfo checkListenerToken(INotificationListener listener) {
+        final IBinder token = listener.asBinder();
+        final int N = mListeners.size();
+        for (int i=0; i<N; i++) {
+            final NotificationListenerInfo info = mListeners.get(i);
+            if (info.listener.asBinder() == token) return info;
+        }
+        throw new SecurityException("Disallowed call from unknown listener: " + listener);
+    }
+
+    /**
+     * Allow an INotificationListener to simulate a "clear all" operation.
+     *
+     * {@see com.android.server.StatusBarManagerService.NotificationCallbacks#onClearAllNotifications}
+     *
+     * @param token The binder for the listener, to check that the caller is allowed
+     */
+    public void cancelAllNotificationsFromListener(INotificationListener token) {
+        NotificationListenerInfo info = checkListenerToken(token);
+        long identity = Binder.clearCallingIdentity();
+        try {
+            cancelAll(info.userid);
+        } finally {
+            Binder.restoreCallingIdentity(identity);
+        }
+    }
+
+    /**
+     * Allow an INotificationListener to simulate clearing (dismissing) a single notification.
+     *
+     * {@see com.android.server.StatusBarManagerService.NotificationCallbacks#onNotificationClear}
+     *
+     * @param token The binder for the listener, to check that the caller is allowed
+     */
+    public void cancelNotificationFromListener(INotificationListener token, String pkg, String tag, int id) {
+        NotificationListenerInfo info = checkListenerToken(token);
+        long identity = Binder.clearCallingIdentity();
+        try {
+            cancelNotification(pkg, tag, id, 0,
+                    Notification.FLAG_ONGOING_EVENT | Notification.FLAG_FOREGROUND_SERVICE,
+                    true,
+                    info.userid);
+        } finally {
+            Binder.restoreCallingIdentity(identity);
+        }
+    }
+
+    /**
+     * Allow an INotificationListener to request the list of outstanding notifications seen by
+     * the current user. Useful when starting up, after which point the listener callbacks should
+     * be used.
+     *
+     * @param token The binder for the listener, to check that the caller is allowed
+     */
+    public StatusBarNotification[] getActiveNotificationsFromListener(INotificationListener token) {
+        NotificationListenerInfo info = checkListenerToken(token);
+
+        StatusBarNotification[] result = new StatusBarNotification[0];
+        ArrayList<StatusBarNotification> list = new ArrayList<StatusBarNotification>();
+        synchronized (mNotificationList) {
+            final int N = mNotificationList.size();
+            for (int i=0; i<N; i++) {
+                StatusBarNotification sbn = mNotificationList.get(i).sbn;
+                if (info.enabledAndUserMatches(sbn)) {
+                    list.add(sbn);
+                }
+            }
+        }
+        return list.toArray(result);
+    }
+
+    // -- end of listener APIs --
+
+    public static final class NotificationRecord
     {
         final String pkg;
         final String tag;
@@ -742,6 +1292,7 @@ public class NotificationManagerService extends INotificationManager.Stub
         mHandler = new WorkerHandler();
 
         loadBlockDb();
+	loadHaloBlockDb();
 
         mStatusBar = statusBar;
         statusBar.setNotificationCallbacks(mNotificationCallbacks);
