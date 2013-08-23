@@ -111,7 +111,7 @@ LOCAL_SRC_FILES += \
 	core/java/android/app/IThumbnailRetriever.aidl \
 	core/java/android/app/ITransientNotification.aidl \
 	core/java/android/app/IUiModeManager.aidl \
-    core/java/android/app/IUserSwitchObserver.aidl \
+	core/java/android/app/IUserSwitchObserver.aidl \
 	core/java/android/app/IWallpaperManager.aidl \
 	core/java/android/app/IWallpaperManagerCallback.aidl \
 	core/java/android/app/admin/IDevicePolicyManager.aidl \
@@ -165,6 +165,7 @@ LOCAL_SRC_FILES += \
 	core/java/android/os/IVibratorService.aidl \
 	core/java/android/service/dreams/IDreamManager.aidl \
 	core/java/android/service/dreams/IDreamService.aidl \
+	core/java/android/service/notification/INotificationListener.aidl \
 	core/java/android/service/pie/IPieService.aidl \
 	core/java/android/service/pie/IPieActivationListener.aidl \
 	core/java/android/service/pie/IPieHostCallback.aidl \
