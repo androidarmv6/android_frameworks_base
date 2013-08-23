@@ -166,7 +166,6 @@ LOCAL_SRC_FILES += \
 	core/java/android/service/dreams/IDreamManager.aidl \
 	core/java/android/service/dreams/IDreamService.aidl \
 	core/java/android/service/notification/INotificationListener.aidl \
-#	core/java/android/service/notification/StatusBarNotification.aidl \
 	core/java/android/service/pie/IPieService.aidl \
 	core/java/android/service/pie/IPieActivationListener.aidl \
 	core/java/android/service/pie/IPieHostCallback.aidl \
@@ -262,7 +261,6 @@ LOCAL_SRC_FILES += \
 	fmradio/java/com/stericsson/hardware/fm/IOnStereoListener.aidl \
 	fmradio/java/com/stericsson/hardware/fm/IOnExtraCommandListener.aidl \
 	fmradio/java/com/stericsson/hardware/fm/IOnAutomaticSwitchListener.aidl
-#
 
 ifeq ($(BOARD_HAVE_BLUETOOTH_BLUEZ), true)
 LOCAL_SRC_FILES += \
