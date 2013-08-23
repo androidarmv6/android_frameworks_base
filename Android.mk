@@ -165,7 +165,7 @@ LOCAL_SRC_FILES += \
 	core/java/android/os/IVibratorService.aidl \
 	core/java/android/service/dreams/IDreamManager.aidl \
 	core/java/android/service/dreams/IDreamService.aidl \
-	core/java/android/service/notification/NotificationListener.aidl \
+	core/java/android/service/notification/INotificationListener.aidl \
 #	core/java/android/service/notification/StatusBarNotification.aidl \
 	core/java/android/service/pie/IPieService.aidl \
 	core/java/android/service/pie/IPieActivationListener.aidl \
