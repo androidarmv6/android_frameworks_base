@@ -661,14 +661,7 @@ public class Notification implements Parcelable
         }
 
         if (this.extras != null) {
-            try {
-                that.extras = new Bundle(this.extras);
-                // will unparcel
-                that.extras.size();
-            } catch (BadParcelableException e) {
-                Log.e(TAG, "could not unparcel extras from notification: " + this, e);
-                that.extras = null;
-            }
+            that.extras = new Bundle(this.extras);
         }
 
         if (this.actions != null) {
@@ -684,6 +677,23 @@ public class Notification implements Parcelable
 
         if (!heavy) {
             that.lightenPayload(); // will clean out extras
+        }
+    }
+    
+    /**
+     * Removes heavyweight parts of the Notification object for archival or for sending to
+     * listeners when the full contents are not necessary.
+     * @hide
+     */
+    public final void lightenPayload() {
+        tickerView = null;
+        contentView = null;
+        bigContentView = null;
+        largeIcon = null;
+        if (extras != null) {
+            extras.remove(Notification.EXTRA_LARGE_ICON);
+            extras.remove(Notification.EXTRA_LARGE_ICON_BIG);
+            extras.remove(Notification.EXTRA_PICTURE);
         }
     }
 
