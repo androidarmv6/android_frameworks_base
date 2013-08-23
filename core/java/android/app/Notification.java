@@ -430,12 +430,42 @@ public class Notification implements Parcelable
      */
     public String[] kind;
 
-    /**
-     * Extra key for people values (type TBD).
-     *
-     * @hide
-     */
+    // extras keys for Builder inputs
+    /** @hide */
+    public static final String EXTRA_TITLE = "android.title";
+    /** @hide */
+    public static final String EXTRA_TITLE_BIG = EXTRA_TITLE + ".big";
+    /** @hide */
+    public static final String EXTRA_TEXT = "android.text";
+    /** @hide */
+    public static final String EXTRA_SUB_TEXT = "android.subText";
+    /** @hide */
+    public static final String EXTRA_INFO_TEXT = "android.infoText";
+    /** @hide */
+    public static final String EXTRA_SUMMARY_TEXT = "android.summaryText";
+    /** @hide */
+    public static final String EXTRA_SMALL_ICON = "android.icon";
+    /** @hide */
+    public static final String EXTRA_LARGE_ICON = "android.largeIcon";
+    /** @hide */
+    public static final String EXTRA_LARGE_ICON_BIG = EXTRA_LARGE_ICON + ".big";
+    /** Extra key for people values (type TBD).
+     * @hide */
     public static final String EXTRA_PEOPLE = "android.people";
+    /** @hide */
+    public static final String EXTRA_PROGRESS = "android.progress";
+    /** @hide */
+    public static final String EXTRA_PROGRESS_MAX = "android.progressMax";
+    /** @hide */
+    public static final String EXTRA_PROGRESS_INDETERMINATE = "android.progressIndeterminate";
+    /** @hide */
+    public static final String EXTRA_SHOW_CHRONOMETER = "android.showChronometer";
+    /** @hide */
+    public static final String EXTRA_SHOW_WHEN = "android.showWhen";
+    /** @hide from BigPictureStyle */
+    public static final String EXTRA_PICTURE = "android.picture";
+    /** @hide from InboxStyle */
+    public static final String EXTRA_TEXT_LINES = "android.textLines";
 
     private Bundle extras;
 
