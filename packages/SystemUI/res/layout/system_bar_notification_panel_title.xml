@@ -222,7 +222,7 @@
             android:layout_marginLeft="8dp"
             android:layout_marginRight="8dp"
             android:textAppearance="@style/TextAppearance.SystemBar.Expanded.Date"
-            />
+            /> 
 
         <Space
             android:layout_width="0dp"
@@ -238,4 +238,26 @@
             android:contentDescription="@string/accessibility_clear_all"
             />
     </LinearLayout>
+    
+    <RelativeLayout>
+        <ImageView android:id="@+id/clear_all_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toLeftOf="@+id/quick_buttons"
+            android:paddingTop="14dp"
+            android:layout_alignParentTop="true"
+            android:paddingRight="15dp"
+            android:src="@drawable/ic_notify_clear_normal"
+            android:contentDescription="@string/accessibility_clear_all"/>        
+
+        <ImageView android:id="@+id/halo_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toLeftOf="@+id/clear_all_button"
+            android:paddingTop="14dp"
+            android:layout_alignParentTop="true"
+            android:paddingRight="15dp"
+            android:src="@drawable/ic_notify_halo_normal"
+            android:contentDescription="@string/accessibility_halo" />
+        </RelativeLayout>
 </com.android.systemui.statusbar.tablet.NotificationPanelTitle>
