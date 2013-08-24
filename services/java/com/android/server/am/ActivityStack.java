@@ -2710,9 +2710,12 @@ final class ActivityStack {
         if ((launchFlags &
                 (Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_TASK_ON_HOME))
                 == (Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_TASK_ON_HOME)) {
-            // Caller wants to appear on home activity, so before starting
-            // their own activity we will bring home to the front.
-            moveHomeToFrontLocked();
+            boolean floating = (launchFlags&Intent.FLAG_FLOATING_WINDOW) == Intent.FLAG_FLOATING_WINDOW;
+            if (!floating) {
+                // Caller wants to appear on home activity, so before starting
+                // their own activity we will bring home to the front.
+                moveHomeToFrontLocked();
+            }
         }
     }
 
@@ -2775,7 +2778,8 @@ final class ActivityStack {
             launchFlags |= Intent.FLAG_ACTIVITY_NEW_TASK;
         }
 
-        if (r.resultTo != null && (launchFlags&Intent.FLAG_ACTIVITY_NEW_TASK) != 0) {
+        if (r.resultTo != null && (launchFlags&Intent.FLAG_ACTIVITY_NEW_TASK) != 0 &&
+                (launchFlags&Intent.FLAG_FLOATING_WINDOW) == 0) {
             // For whatever reason this activity is being launched into a new
             // task...  yet the caller has requested a result back.  Well, that
             // is pretty messed up, so instead immediately send back a cancel
@@ -3318,6 +3322,11 @@ final class ActivityStack {
         try {
             synchronized (mService) {
 
+                // we must resolve if the last intent in the stack is floating to give the flag to the previous
+                boolean floating = false;
+                if (intents.length > 0) {
+                    floating = (intents[intents.length - 1].getFlags()&Intent.FLAG_FLOATING_WINDOW) == Intent.FLAG_FLOATING_WINDOW;
+                }
                 for (int i=0; i<intents.length; i++) {
                     Intent intent = intents[i];
                     if (intent == null) {
@@ -3344,6 +3353,10 @@ final class ActivityStack {
                             & ApplicationInfo.FLAG_CANT_SAVE_STATE) != 0) {
                         throw new IllegalArgumentException(
                                 "FLAG_CANT_SAVE_STATE not supported here");
+                    }
+
+                    if (floating) {
+                        intent.addFlags(Intent.FLAG_FLOATING_WINDOW);
                     }
 
                     Bundle theseOptions;
