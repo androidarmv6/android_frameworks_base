@@ -430,42 +430,12 @@ public class Notification implements Parcelable
      */
     public String[] kind;
 
-    // extras keys for Builder inputs
-    /** @hide */
-    public static final String EXTRA_TITLE = "android.title";
-    /** @hide */
-    public static final String EXTRA_TITLE_BIG = EXTRA_TITLE + ".big";
-    /** @hide */
-    public static final String EXTRA_TEXT = "android.text";
-    /** @hide */
-    public static final String EXTRA_SUB_TEXT = "android.subText";
-    /** @hide */
-    public static final String EXTRA_INFO_TEXT = "android.infoText";
-    /** @hide */
-    public static final String EXTRA_SUMMARY_TEXT = "android.summaryText";
-    /** @hide */
-    public static final String EXTRA_SMALL_ICON = "android.icon";
-    /** @hide */
-    public static final String EXTRA_LARGE_ICON = "android.largeIcon";
-    /** @hide */
-    public static final String EXTRA_LARGE_ICON_BIG = EXTRA_LARGE_ICON + ".big";
-    /** Extra key for people values (type TBD).
-     * @hide */
+    /**
+     * Extra key for people values (type TBD).
+     *
+     * @hide
+     */
     public static final String EXTRA_PEOPLE = "android.people";
-    /** @hide */
-    public static final String EXTRA_PROGRESS = "android.progress";
-    /** @hide */
-    public static final String EXTRA_PROGRESS_MAX = "android.progressMax";
-    /** @hide */
-    public static final String EXTRA_PROGRESS_INDETERMINATE = "android.progressIndeterminate";
-    /** @hide */
-    public static final String EXTRA_SHOW_CHRONOMETER = "android.showChronometer";
-    /** @hide */
-    public static final String EXTRA_SHOW_WHEN = "android.showWhen";
-    /** @hide from BigPictureStyle */
-    public static final String EXTRA_PICTURE = "android.picture";
-    /** @hide from InboxStyle */
-    public static final String EXTRA_TEXT_LINES = "android.textLines";
 
     private Bundle extras;
 
@@ -632,16 +602,7 @@ public class Notification implements Parcelable
     @Override
     public Notification clone() {
         Notification that = new Notification();
-        cloneInto(that, true);
-        return that;
-    }
 
-    /**
-     * Copy all (or if heavy is false, all except Bitmaps and RemoteViews) members
-     * of this into that.
-     * @hide
-     */
-    public void cloneInto(Notification that, boolean heavy) {
         that.when = this.when;
         that.icon = this.icon;
         that.number = this.number;
@@ -654,13 +615,13 @@ public class Notification implements Parcelable
         if (this.tickerText != null) {
             that.tickerText = this.tickerText.toString();
         }
-        if (heavy && this.tickerView != null) {
+        if (this.tickerView != null) {
             that.tickerView = this.tickerView.clone();
         }
-        if (heavy && this.contentView != null) {
+        if (this.contentView != null) {
             that.contentView = this.contentView.clone();
         }
-        if (heavy && this.largeIcon != null) {
+        if (this.largeIcon != null) {
             that.largeIcon = Bitmap.createBitmap(this.largeIcon);
         }
         that.iconLevel = this.iconLevel;
@@ -692,39 +653,18 @@ public class Notification implements Parcelable
 
         if (this.extras != null) {
             that.extras = new Bundle(this.extras);
+
         }
 
-        if (this.actions != null) {
-            that.actions = new Action[this.actions.length];
-            for(int i=0; i<this.actions.length; i++) {
-                that.actions[i] = this.actions[i].clone();
-            }
+        that.actions = new Action[this.actions.length];
+        for(int i=0; i<this.actions.length; i++) {
+            that.actions[i] = this.actions[i].clone();
         }
-
-        if (heavy && this.bigContentView != null) {
+        if (this.bigContentView != null) {
             that.bigContentView = this.bigContentView.clone();
         }
 
-        if (!heavy) {
-            that.lightenPayload(); // will clean out extras
-        }
-    }
-    
-    /**
-     * Removes heavyweight parts of the Notification object for archival or for sending to
-     * listeners when the full contents are not necessary.
-     * @hide
-     */
-    public final void lightenPayload() {
-        tickerView = null;
-        contentView = null;
-        bigContentView = null;
-        largeIcon = null;
-        if (extras != null) {
-            extras.remove(Notification.EXTRA_LARGE_ICON);
-            extras.remove(Notification.EXTRA_LARGE_ICON_BIG);
-            extras.remove(Notification.EXTRA_PICTURE);
-        }
+        return that;
     }
 
     public int describeContents() {
