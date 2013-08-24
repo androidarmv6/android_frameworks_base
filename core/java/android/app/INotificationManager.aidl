@@ -34,5 +34,16 @@ interface INotificationManager
 
     void setNotificationsEnabledForPackage(String pkg, boolean enabled);
     boolean areNotificationsEnabledForPackage(String pkg);
+    
+    StatusBarNotification[] getActiveNotifications(String callingPkg);
+    StatusBarNotification[] getHistoricalNotifications(String callingPkg, int count);
+
+    void registerListener(in INotificationListener listener, in ComponentName component, int userid);
+    void unregisterListener(in INotificationListener listener, int userid);
+
+    void cancelNotificationFromListener(in INotificationListener token, String pkg, String tag, int id);
+    void cancelAllNotificationsFromListener(in INotificationListener token);
+
+    StatusBarNotification[] getActiveNotificationsFromListener(in INotificationListener token);
 }
 
