@@ -41,6 +41,9 @@
     <!-- Title shown in recents popup for inspecting an application's properties -->
     <string name="status_bar_recent_inspect_item_title">App info</string>
 
+    <!-- Title shown in recents popup for showing app in floating mode -->
+    <string name="status_bar_recent_floating_item_title">Floating mode</string>
+
     <!-- Message shown in the middle of the screen after clicking on the recent apps button
          when there are no recent apps to show. Also used for accessibility. [CHAR LIMIT=45]-->
     <string name="status_bar_no_recent_apps">No recent apps</string>
@@ -519,4 +522,9 @@
     <string name="status_bar_help_title">Notifications appear here</string>
     <!-- Body of help text shown when the notification panel is pulled down for the very first time. [CHAR LIMIT=NONE] -->
     <string name="status_bar_help_text">Access them anytime by swiping down.\nSwipe down again for system controls.</string>
+
+    <string name="halo_dismiss">Dismiss notification</string>
+    <string name="halo_hide">Hide</string>
+    <string name="halo_clear_all">Clear all notifications</string>
+    <string name="halo_silence">Hide and silence until woken</string>
 </resources>
