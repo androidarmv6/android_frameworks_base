@@ -444,7 +444,7 @@ public class NotificationManagerService extends INotificationManager.Stub
         }
     }
 
-    private static final class NotificationRecord
+    public static final class NotificationRecord
     {
         final String pkg;
         final String tag;
