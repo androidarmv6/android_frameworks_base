@@ -22,7 +22,7 @@ import static org.xmlpull.v1.XmlPullParser.START_TAG;
 
 import android.app.ActivityManager;
 import android.app.ActivityManagerNative;
-import android.app.AppGlobals;
+import android.app.AppOpsManager;
 import android.app.IActivityManager;
 import android.app.INotificationManager;
 import android.app.ITransientNotification;
@@ -444,7 +444,7 @@ public class NotificationManagerService extends INotificationManager.Stub
         }
     }
 
-    private static final class NotificationRecord
+    public static final class NotificationRecord
     {
         final String pkg;
         final String tag;
