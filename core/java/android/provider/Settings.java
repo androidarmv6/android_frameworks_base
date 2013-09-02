@@ -1028,6 +1028,42 @@ public final class Settings {
             outKeySet.addAll(MOVED_TO_GLOBAL);
         }
 
+        	/**
+             * Look up a boolean in the database.
+             * @param resolver to access the database with
+             * @param name to look up in the table
+             * @param def Value to return if the setting is not defined.
+             * @return The setting's current value, or 'def' if it is not defined
+             * or not a valid boolean.
+             */
+        public static boolean getBoolean(ContentResolver cr, String name, boolean def) {
+            String v = getString(cr, name);
+            try {
+                if(v != null)
+                    return "1".equals(v);
+                else
+                    return def;
+            } catch (NumberFormatException e) {
+                return def;
+            }
+        }
+        /**
+         * Convenience function for updating a single settings value as a
+         * boolean. This will either create a new entry in the table if the
+         * given name does not exist, or modify the value of the existing row
+         * with that name. Note that internally setting values are always
+         * stored as strings, so this function converts the given value to a
+         * string before storing it.
+         *
+         * @param cr The ContentResolver to access.
+         * @param name The name of the setting to modify.
+         * @param value The new value for the setting.
+         * @return true if the value was set, false on database errors
+         */
+        public static boolean putBoolean(ContentResolver cr, String name, boolean value) {
+            return putString(cr, name, value ? "1" : "0");
+        }
+
         /**
          * Look up a name in the database.
          * @param resolver to access the database with
@@ -2751,6 +2787,13 @@ public final class Settings {
         public static final String QS_COLLAPSE_PANEL = "qs_collapse_panel";
 
         /**
+         * Quick Settings Launch in Floating Window
+         * 
+         * @hide
+         */
+        public static final String QS_FLOATING_WINDOW = "qs_floating_window"; 
+
+        /**
          * Quick Settings Quick access ribbon
          *
          * @hide
@@ -2823,6 +2866,49 @@ public final class Settings {
          * @hide
          */
         public static final String STATUS_BAR_BATTERY = "status_bar_battery";
+
+        /**
+         * HALO enabled, should default to 0 (HALO is disabled)
+         * @hide
+         */
+        public static final String HALO_ENABLED = "halo_enabled";
+
+   /**
+         * HALO, should default to 0 (no, do not show)
+         * @hide
+         */
+        public static final String HALO_ACTIVE = "halo_active";
+
+        /**
+         * HALO reversed?, should default to 1 (yes, reverse)
+         * @hide
+         */
+        public static final String HALO_REVERSED = "halo_reversed";
+
+        /**
+         * HALO hide?, should default to 0 (no, do not hide)
+         * @hide
+         */
+        public static final String HALO_HIDE = "halo_hide"; 
+
+        /**
+         * HALO size fraction, default is 1.0f (normal)
+         * @hide
+         */
+        public static final String HALO_SIZE = "halo_size";
+
+        /**
+         * HALO pause activities?, defaults to 0 (no, do not pause) on devices which isLargeRAM() == true
+         * otherwise it defaults to 1 (yes, do pause)
+         * @hide
+         */
+        public static final String HALO_PAUSE = "halo_pause";
+
+        /**
+         * Do you want popups/floating windows?
+         * @hide
+         */
+        public static final String WE_WANT_POPUPS = "we_want_popups"; 
 
         /**
          * Whether to show the clock in status bar
