@@ -964,7 +964,15 @@ public class BluetoothA2dpService extends IBluetoothA2dp.Stub {
     }
 
     public synchronized boolean connectSinkInternal(BluetoothDevice device) {
-        if (!mBluetoothService.isEnabled()) return false;
+        if (!mBluetoothService.isEnabled()) {
+            /* Got BT off while connecting, set A2dp Priority to AUTO_CONNECT so
+               that the A2dp profile connection is initiated when BT is turned On*/
+            if (getPriority(device) == BluetoothA2dp.PRIORITY_ON) {
+                log("Reset A2dp profile priority to AUTO CONNECT");
+                setPriority(device, BluetoothA2dp.PRIORITY_AUTO_CONNECT);
+            }
+            return false;
+        }
 
         int state = mAudioDevices.get(device);
         // ignore if there are any active sinks
