@@ -572,6 +572,12 @@ public class MediaPlayer
      */
     private static final int PLAYSTATUS_REWIND = 0x4;
 
+   /**
+      Constant to introduce delay in posting message to A2dp Handler.
+      {@hide}
+    */
+    private static final int A2DP_HANDLER_TIMEOUT = 10;
+
     /**
        Constant to disable the metadata filter during retrieval.
        // FIXME: unhide.
@@ -596,6 +602,7 @@ public class MediaPlayer
     private int mListenerContext; // accessed by native methods
     private SurfaceHolder mSurfaceHolder;
     private EventHandler mEventHandler;
+    private A2dpHandler mA2dpHandler;
     private PowerManager.WakeLock mWakeLock = null;
     private boolean mScreenOnWhilePlaying;
     private boolean mStayAwake;
@@ -612,10 +619,13 @@ public class MediaPlayer
         Looper looper;
         if ((looper = Looper.myLooper()) != null) {
             mEventHandler = new EventHandler(this, looper);
+            mA2dpHandler = new A2dpHandler(this, looper);
         } else if ((looper = Looper.getMainLooper()) != null) {
             mEventHandler = new EventHandler(this, looper);
+            mA2dpHandler = new A2dpHandler(this, looper);
         } else {
             mEventHandler = null;
+            mA2dpHandler = null;
         }
 
         /* Native setup requires a weak reference to our object.
@@ -1065,9 +1075,10 @@ public class MediaPlayer
      */
     public  void start() throws IllegalStateException {
         stayAwake(true);
-
-       mA2dpHandler.obtainMessage(PLAYER_PLAY).sendToTarget();
-
+        if (mA2dpHandler != null) {
+            Message msg = Message.obtain(mA2dpHandler, PLAYER_PLAY);
+            mA2dpHandler.sendMessageDelayed(msg, A2DP_HANDLER_TIMEOUT);
+        }
         _start();
     }
 
@@ -1082,9 +1093,10 @@ public class MediaPlayer
     public void stop() throws IllegalStateException {
         stayAwake(false);
         _stop();
-
-       mA2dpHandler.obtainMessage(PLAYER_STOP).sendToTarget();
-
+        if (mA2dpHandler != null) {
+            Message msg = Message.obtain(mA2dpHandler, PLAYER_STOP);
+            mA2dpHandler.sendMessageDelayed(msg, A2DP_HANDLER_TIMEOUT);
+        }
     }
 
     private native void _stop() throws IllegalStateException;
@@ -1098,9 +1110,10 @@ public class MediaPlayer
     public void pause() throws IllegalStateException {
         stayAwake(false);
         _pause();
-
-       mA2dpHandler.obtainMessage(PLAYER_PAUSE).sendToTarget();
-
+        if (mA2dpHandler != null) {
+            Message msg = Message.obtain(mA2dpHandler, PLAYER_PAUSE);
+            mA2dpHandler.sendMessageDelayed(msg, A2DP_HANDLER_TIMEOUT);
+        }
     }
 
     private native void _pause() throws IllegalStateException;
@@ -1217,8 +1230,11 @@ public class MediaPlayer
      * initialized
      */
     public void seekTo(int msec) throws IllegalStateException {
-       mA2dpHandler.obtainMessage(PLAYER_SEEK_TO, msec, getCurrentPosition()).sendToTarget();
-
+        if (mA2dpHandler != null) {
+            Message msg = Message.obtain(mA2dpHandler, PLAYER_SEEK_TO,
+                                         msec, getCurrentPosition());
+            mA2dpHandler.sendMessageDelayed(msg, A2DP_HANDLER_TIMEOUT);
+        }
         _seekTo(msec);
     }
 
@@ -1385,19 +1401,9 @@ public class MediaPlayer
     public void reset() {
         stayAwake(false);
         _reset();
-        if (mContext != null) {
-            Intent intent = new Intent(ACTION_METADATA_CHANGED);
-            intent.putExtra("duration", 0);
-            intent.putExtra("time", System.currentTimeMillis());
-            intent.putExtra("position", 0);
-            Log.d(TAG, "reset() mUri is " + mUri);
-            intent.putExtra("uripath", mUri);
-            intent.putExtra("playstate", PLAYSTATUS_STOPPED);
-            mContext.sendBroadcast(intent);
-        }
-
         // make sure none of the listeners get called anymore
         mEventHandler.removeCallbacksAndMessages(null);
+        mA2dpHandler.removeCallbacksAndMessages(null);
     }
 
     private native void _reset();
@@ -2019,9 +2025,17 @@ public class MediaPlayer
     private static final int PLAYER_STOP = 4;
     private static final int PLAYER_SEEK_TO = 5;
 
-    private Handler mA2dpHandler = new Handler()
+
+    private class A2dpHandler extends Handler
     {
-        @Override
+        private MediaPlayer mMediaPlayer;
+
+        public A2dpHandler(MediaPlayer mp, Looper looper) {
+           super(looper);
+           mMediaPlayer = mp;
+        }
+
+      @Override
         public void handleMessage(Message msg) {
         switch (msg.what) {
              case PLAYER_SEEK_COMPLETE:
@@ -2147,10 +2161,12 @@ public class MediaPlayer
 
             case MEDIA_SEEK_COMPLETE:
               {
-                mA2dpHandler.obtainMessage(PLAYER_SEEK_COMPLETE).sendToTarget();
-
-                  if (mOnSeekCompleteListener != null)
-                      mOnSeekCompleteListener.onSeekComplete(mMediaPlayer);
+                if (mA2dpHandler != null) {
+                    Message msgA2dp = Message.obtain(mA2dpHandler, PLAYER_SEEK_COMPLETE);
+                    mA2dpHandler.sendMessageDelayed(msgA2dp, A2DP_HANDLER_TIMEOUT);
+                }
+                if (mOnSeekCompleteListener != null)
+                    mOnSeekCompleteListener.onSeekComplete(mMediaPlayer);
               }
               return;
 
