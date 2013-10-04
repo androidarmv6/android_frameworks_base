@@ -41,9 +41,6 @@
     <!-- Title shown in recents popup for inspecting an application's properties -->
     <string name="status_bar_recent_inspect_item_title">App info</string>
 
-    <!-- Title shown in recents popup for showing app in floating mode -->
-    <string name="status_bar_recent_floating_item_title">Floating mode</string>
-
     <!-- Message shown in the middle of the screen after clicking on the recent apps button
          when there are no recent apps to show. Also used for accessibility. [CHAR LIMIT=45]-->
     <string name="status_bar_no_recent_apps">No recent apps</string>
@@ -429,9 +426,6 @@
     <!-- Notification text: when GPS has found a fix [CHAR LIMIT=50] -->
     <string name="gps_notification_found_text">Location set by GPS</string>
 
-    <!-- Content description of the halo button in the notification panel for accessibility (not shown on the screen). [CHAR LIMIT=NONE] -->
-    <string name="accessibility_halo">Create notification halo.</string>
-
     <!-- Content description of the clear button in the notification panel for accessibility (not shown on the screen). [CHAR LIMIT=NONE] -->
     <string name="accessibility_clear_all">Clear all notifications.</string>
 
@@ -522,13 +516,4 @@
     <string name="status_bar_help_title">Notifications appear here</string>
     <!-- Body of help text shown when the notification panel is pulled down for the very first time. [CHAR LIMIT=NONE] -->
     <string name="status_bar_help_text">Access them anytime by swiping down.\nSwipe down again for system controls.</string>
-
-    <string name="halo_dismiss">Dismiss notification</string>
-    <string name="halo_hide">Hide</string>
-    <string name="halo_clear_all">Clear all notifications</string>
-    <string name="halo_silence">Hide and silence until woken</string>
-    <string name="halo_tutorial1">I am HALO</string>
-    <string name="halo_tutorial2">Double-tap-drag to move me around, drag to switch tasks</string>
-    <string name="halo_tutorial3">Change my behavior in the settings</string>
-
 </resources>

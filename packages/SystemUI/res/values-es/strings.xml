@@ -25,7 +25,6 @@
     <string name="status_bar_please_disturb_button" msgid="3345398298841572813">"Mostrar notificaciones"</string>
     <string name="status_bar_recent_remove_item_title" msgid="6026395868129852968">"Eliminar de la lista"</string>
     <string name="status_bar_recent_inspect_item_title" msgid="7793624864528818569">"Información de la aplicación"</string>
-    <string name="status_bar_recent_floating_item_title">Modo flotante</string>
     <string name="status_bar_no_recent_apps" msgid="6576392951053994640">"No hay aplicaciones recientes."</string>
     <string name="status_bar_accessibility_dismiss_recents" msgid="4576076075226540105">"Ignorar aplicaciones recientes"</string>
   <plurals name="status_bar_accessibility_recent_apps">
@@ -204,12 +203,4 @@
     <string name="quick_settings_brightness_dialog_auto_brightness_label" msgid="5064982743784071218">"AUTO"</string>
     <string name="status_bar_help_title" msgid="1199237744086469217">"Las notificaciones aparecen aquí"</string>
     <string name="status_bar_help_text" msgid="7874607155052076323">"Desliza el dedo hacia abajo para acceder al contenido."\n"Vuelve a deslizar el dedo hacia abajo para acceder a los controles del sistema."</string>
-
-    <string name="halo_dismiss">Descartar notificación</string>
-    <string name="halo_hide">Ocultar</string>
-    <string name="halo_clear_all">Limpiar todas las notificaciones</string>
-    <string name="halo_silence">Ocultar y silenciar hasta despertar</string>
-    <string name="halo_tutorial1">Soy HALO</string>
-    <string name="halo_tutorial2">Doble pulsación y arrastre para moverme alrededor, arrastre para alternar entre las tareas</string>
-    <string name="halo_tutorial3">Cambia mi comportamiento en Ajustes</string>
 </resources>
