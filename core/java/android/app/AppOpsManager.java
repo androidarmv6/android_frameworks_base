@@ -104,7 +104,8 @@ public class AppOpsManager {
     public static final int OP_WIFI_CHANGE = 31;
     public static final int OP_BLUETOOTH_CHANGE = 32;
     public static final int OP_DATA_CONNECT_CHANGE = 33;
-    public static final int _NUM_OP = 34;
+    public static final int OP_ALARM_WAKEUP = 34;
+    public static final int _NUM_OP = 35;
 
     /**
      * Map to check if each operation is strict or not, to determine default
@@ -147,6 +148,7 @@ public class AppOpsManager {
         true,   //OP_WIFI_CHANGE
         true,   //OP_BLUETOOTH_CHANGE
         true,   //OP_DATA_CONNECT_CHANGE
+        false,  //OP_ALARM_WAKEUP
     };
 
     /**
@@ -192,6 +194,7 @@ public class AppOpsManager {
             OP_WIFI_CHANGE,
             OP_BLUETOOTH_CHANGE,
             OP_DATA_CONNECT_CHANGE,
+            OP_ALARM_WAKEUP,
     };
 
     /**
@@ -233,6 +236,7 @@ public class AppOpsManager {
             "WIFI_CHANGE",
             "BLUETOOTH_CHANGE",
             "DATA_CONNECT_CHANGE",
+            "ALARM_WAKEUP",
     };
 
     /**
@@ -274,6 +278,7 @@ public class AppOpsManager {
             android.Manifest.permission.CHANGE_WIFI_STATE,
             android.Manifest.permission.BLUETOOTH,
             android.Manifest.permission.CHANGE_NETWORK_STATE,
+            null, // no permission for alarm wakeups
     };
 
     /**
@@ -296,6 +301,18 @@ public class AppOpsManager {
     public static String opToName(int op) {
         if (op == OP_NONE) return "NONE";
         return op < sOpNames.length ? sOpNames[op] : ("Unknown(" + op + ")");
+    }
+
+    /**
+     * Map a non-localized name for the operation back to the Op number
+     */
+    public static int nameToOp(String name) {
+        for (int i = 0; i < sOpNames.length; i++) {
+            if (sOpNames[i].equals(name)) {
+                return i;
+            }
+        }
+        return OP_NONE;
     }
 
     /**
@@ -376,13 +393,18 @@ public class AppOpsManager {
         private final long mTime;
         private final long mRejectTime;
         private final int mDuration;
+        private final int mAllowedCount;
+        private final int mIgnoredCount;
 
-        public OpEntry(int op, int mode, long time, long rejectTime, int duration) {
+        public OpEntry(int op, int mode, long time, long rejectTime, int duration,
+                int allowedCount, int ignoredCount) {
             mOp = op;
             mMode = mode;
             mTime = time;
             mRejectTime = rejectTime;
             mDuration = duration;
+            mAllowedCount = allowedCount;
+            mIgnoredCount = ignoredCount;
         }
 
         public int getOp() {
@@ -409,6 +431,14 @@ public class AppOpsManager {
             return mDuration == -1 ? (int)(System.currentTimeMillis()-mTime) : mDuration;
         }
 
+        public int getAllowedCount() {
+            return mAllowedCount;
+        }
+
+        public int getIgnoredCount() {
+            return mIgnoredCount;
+        }
+
         @Override
         public int describeContents() {
             return 0;
@@ -421,6 +451,8 @@ public class AppOpsManager {
             dest.writeLong(mTime);
             dest.writeLong(mRejectTime);
             dest.writeInt(mDuration);
+            dest.writeInt(mAllowedCount);
+            dest.writeInt(mIgnoredCount);
         }
 
         OpEntry(Parcel source) {
@@ -429,6 +461,8 @@ public class AppOpsManager {
             mTime = source.readLong();
             mRejectTime = source.readLong();
             mDuration = source.readInt();
+            mAllowedCount = source.readInt();
+            mIgnoredCount = source.readInt();
         }
 
         public static final Creator<OpEntry> CREATOR = new Creator<OpEntry>() {
@@ -618,6 +652,13 @@ public class AppOpsManager {
             boolean state) {
         try {
             mService.setPrivacyGuardSettingForPackage(uid, packageName, state);
+        } catch (RemoteException e) {
+        }
+    }
+
+    public void resetCounters() {
+        try {
+            mService.resetCounters();
         } catch (RemoteException e) {
         }
     }

@@ -133,6 +133,8 @@ public class AppOpsService extends IAppOpsService.Stub {
         public int nesting;
         public int tempNesting;
         public PermissionDialogResult dialogResult;
+        public int allowedCount;
+        public int ignoredCount;
 
         public Op(int _op, boolean strict) {
             op = _op;
@@ -285,7 +287,8 @@ public class AppOpsService extends IAppOpsService.Stub {
             for (int j=0; j<pkgOps.size(); j++) {
                 Op curOp = pkgOps.valueAt(j);
                 resOps.add(new AppOpsManager.OpEntry(curOp.op, curOp.mode, curOp.time,
-                        curOp.rejectTime, curOp.duration));
+                        curOp.rejectTime, curOp.duration,
+                        curOp.allowedCount, curOp.ignoredCount));
             }
         } else {
             for (int j=0; j<ops.length; j++) {
@@ -295,7 +298,8 @@ public class AppOpsService extends IAppOpsService.Stub {
                         resOps = new ArrayList<AppOpsManager.OpEntry>();
                     }
                     resOps.add(new AppOpsManager.OpEntry(curOp.op, curOp.mode, curOp.time,
-                            curOp.rejectTime, curOp.duration));
+                            curOp.rejectTime, curOp.duration,
+                            curOp.allowedCount, curOp.ignoredCount));
                 }
             }
         }
@@ -440,12 +444,14 @@ public class AppOpsService extends IAppOpsService.Stub {
         HashMap<Callback, ArrayList<Pair<String, Integer>>> callbacks = null;
         synchronized (this) {
             boolean changed = false;
-            for (int i=0; i<mUidOps.size(); i++) {
+            for (int i=mUidOps.size()-1; i>=0; i--) {
                 HashMap<String, Ops> packages = mUidOps.valueAt(i);
-                for (Map.Entry<String, Ops> ent : packages.entrySet()) {
+                Iterator<Map.Entry<String, Ops>> it = packages.entrySet().iterator();
+                while (it.hasNext()) {
+                    Map.Entry<String, Ops> ent = it.next();
                     String packageName = ent.getKey();
                     Ops pkgOps = ent.getValue();
-                    for (int j=0; j<pkgOps.size(); j++) {
+                    for (int j=pkgOps.size()-1; j>=0; j--) {
                         Op curOp = pkgOps.valueAt(j);
                         if (curOp.mode != curOp.defaultMode) {
                             curOp.mode = curOp.defaultMode;
@@ -454,9 +460,17 @@ public class AppOpsService extends IAppOpsService.Stub {
                                     mOpModeWatchers.get(curOp.op));
                             callbacks = addCallbacks(callbacks, packageName, curOp.op,
                                     mPackageModeWatchers.get(packageName));
-                            pruneOp(curOp, mUidOps.keyAt(i), packageName);
+                            if (curOp.time == 0 && curOp.rejectTime == 0) {
+                                pkgOps.removeAt(j);
+                            }
                         }
                     }
+                    if (pkgOps.size() == 0) {
+                        it.remove();
+                    }
+                }
+                if (packages.size() == 0) {
+                    mUidOps.removeAt(i);
                 }
             }
             if (changed) {
@@ -553,11 +567,13 @@ public class AppOpsService extends IAppOpsService.Stub {
                 if (DEBUG) Log.d(TAG, "recordOperation: reject #" + mode + " for code "
                         + switchCode + " (" + code + ") uid " + uid + " package " + packageName);
                 op.rejectTime = System.currentTimeMillis();
+                op.ignoredCount++;
             } else if (mode == AppOpsManager.MODE_ALLOWED) {
                 if (DEBUG) Log.d(TAG, "recordOperation: allowing code " + code + " uid " + uid
                         + " package " + packageName);
                 op.time = System.currentTimeMillis();
                 op.rejectTime = 0;
+                op.allowedCount++;
             }
         }
     }
@@ -1051,7 +1067,16 @@ public class AppOpsService extends IAppOpsService.Stub {
 
             String tagName = parser.getName();
             if (tagName.equals("op")) {
-                int code = Integer.parseInt(parser.getAttributeValue(null, "n"));
+                int code = AppOpsManager.OP_NONE;
+                String codeStr = parser.getAttributeValue(null, "n");
+                if (codeStr != null) {
+                    code = Integer.parseInt(codeStr);
+                }
+                /* use op name string if it exists */
+                String codeNameStr = parser.getAttributeValue(null, "ns");
+                if (codeNameStr != null) {
+                    code = AppOpsManager.nameToOp(codeNameStr);
+                }
                 boolean strict = isStrict(code, uid, pkgName);
                 Op op = new Op(code, strict);
                 String mode = parser.getAttributeValue(null, "m");
@@ -1069,6 +1094,14 @@ public class AppOpsService extends IAppOpsService.Stub {
                 String dur = parser.getAttributeValue(null, "d");
                 if (dur != null) {
                     op.duration = Integer.parseInt(dur);
+                }
+                String allowed = parser.getAttributeValue(null, "ac");
+                if (allowed != null) {
+                    op.allowedCount = Integer.parseInt(allowed);
+                }
+                String ignored = parser.getAttributeValue(null, "ic");
+                if (ignored != null) {
+                    op.ignoredCount = Integer.parseInt(ignored);
                 }
                 HashMap<String, Ops> pkgOps = mUidOps.get(uid);
                 if (pkgOps == null) {
@@ -1126,6 +1159,7 @@ public class AppOpsService extends IAppOpsService.Stub {
                             AppOpsManager.OpEntry op = ops.get(j);
                             out.startTag(null, "op");
                             out.attribute(null, "n", Integer.toString(op.getOp()));
+                            out.attribute(null, "ns", AppOpsManager.opToName(op.getOp()));
                             out.attribute(null, "m", Integer.toString(op.getMode()));
                             long time = op.getTime();
                             if (time != 0) {
@@ -1138,6 +1172,14 @@ public class AppOpsService extends IAppOpsService.Stub {
                             int dur = op.getDuration();
                             if (dur != 0) {
                                 out.attribute(null, "d", Integer.toString(dur));
+                            }
+                            int allowed = op.getAllowedCount();
+                            if (allowed != 0) {
+                                out.attribute(null, "ac", Integer.toString(allowed));
+                            }
+                            int ignored = op.getIgnoredCount();
+                            if (ignored != 0) {
+                                out.attribute(null, "ic", Integer.toString(ignored));
                             }
                             out.endTag(null, "op");
                         }
@@ -1220,5 +1262,27 @@ public class AppOpsService extends IAppOpsService.Stub {
             setMode(switchOp, uid, packageName, state
                     ? AppOpsManager.MODE_IGNORED : AppOpsManager.MODE_ALLOWED);
         }
+    }
+
+    @Override
+    public void resetCounters() {
+        mContext.enforcePermission(android.Manifest.permission.UPDATE_APP_OPS_STATS,
+                Binder.getCallingPid(), Binder.getCallingUid(), null);
+        synchronized (this) {
+            for (int i=0; i<mUidOps.size(); i++) {
+                HashMap<String, Ops> packages = mUidOps.valueAt(i);
+                for (Map.Entry<String, Ops> ent : packages.entrySet()) {
+                    String packageName = ent.getKey();
+                    Ops pkgOps = ent.getValue();
+                    for (int j=0; j<pkgOps.size(); j++) {
+                        Op curOp = pkgOps.valueAt(j);
+                        curOp.allowedCount = 0;
+                        curOp.ignoredCount = 0;
+                    }
+                }
+            }
+        }
+        // ensure the counter reset persists
+        scheduleWriteNowLocked();
     }
 }
