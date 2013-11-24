@@ -199,7 +199,15 @@ public class AppOpsManager {
     /** @hide */
     public static final int OP_BLUETOOTH_CHANGE = 44;
     /** @hide */
-    public static final int _NUM_OP = 45;
+    public static final int OP_DATA_CONNECT_CHANGE = 45;
+    /** @hide */
+    public static final int OP_SEND_MMS = 46;
+    /** @hide */
+    public static final int OP_READ_MMS = 47;
+    /** @hide */
+    public static final int OP_WRITE_MMS = 48;
+    /** @hide */
+    public static final int _NUM_OP = 49;
 
     /** Access to coarse location information. */
     public static final String OPSTR_COARSE_LOCATION =
@@ -268,6 +276,10 @@ public class AppOpsManager {
             OP_COARSE_LOCATION,
             OP_WIFI_CHANGE,
             OP_BLUETOOTH_CHANGE,
+            OP_DATA_CONNECT_CHANGE,
+            OP_SEND_MMS,
+            OP_READ_MMS,
+            OP_WRITE_MMS,
     };
 
     /**
@@ -318,6 +330,10 @@ public class AppOpsManager {
             null,
             OPSTR_MONITOR_LOCATION,
             OPSTR_MONITOR_HIGH_POWER_LOCATION,
+            null,
+            null,
+            null,
+            null,
             null,
             null,
     };
@@ -372,6 +388,10 @@ public class AppOpsManager {
             "MONITOR_HIGH_POWER_LOCATION",
             "WIFI_CHANGE",
             "BLUETOOTH_CHANGE",
+            "DATA_CONNECT_CHANGE",
+            "SEND_MMS",
+            "READ_MMS",
+            "WRITE_MMS",
     };
 
     /**
@@ -424,6 +444,10 @@ public class AppOpsManager {
             null, // no permission for high power location monitoring
             android.Manifest.permission.CHANGE_WIFI_STATE,
             android.Manifest.permission.BLUETOOTH,
+            android.Manifest.permission.CHANGE_NETWORK_STATE,
+            android.Manifest.permission.SEND_SMS,
+            android.Manifest.permission.READ_SMS,
+            android.Manifest.permission.WRITE_SMS,
     };
 
     /**
@@ -475,6 +499,10 @@ public class AppOpsManager {
             AppOpsManager.MODE_ALLOWED, // OP_MONITOR_HIGH_POWER_LOCATION
             AppOpsManager.MODE_ALLOWED, // OP_WIFI_CHANGE
             AppOpsManager.MODE_ALLOWED, // OP_BLUETOOTH_CHANGE
+            AppOpsManager.MODE_ALLOWED, // OP_DATA_CHANGE
+            AppOpsManager.MODE_ALLOWED, // OP_SEND_MMS
+            AppOpsManager.MODE_ALLOWED, // OP_READ_MMS
+            AppOpsManager.MODE_ALLOWED, // OP_WRITE_MMS
     };
 
     /**
@@ -526,6 +554,10 @@ public class AppOpsManager {
             AppOpsManager.MODE_ASK,     // OP_MONITOR_HIGH_POWER_LOCATION
             AppOpsManager.MODE_ASK,     // OP_WIFI_CHANGE
             AppOpsManager.MODE_ASK,     // OP_BLUETOOTH_CHANGE
+            AppOpsManager.MODE_ASK,     // OP_DATA_CHANGE
+            AppOpsManager.MODE_ASK,     // OP_SEND_MMS
+            AppOpsManager.MODE_ASK,     // OP_READ_MMS
+            AppOpsManager.MODE_ASK,     // OP_WRITE_MMS
     };
 
 
@@ -553,6 +585,10 @@ public class AppOpsManager {
             false,
             false,
             true,      // OP_WRITE_SMS
+            false,
+            false,
+            false,
+            false,
             false,
             false,
             false,
