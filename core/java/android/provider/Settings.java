@@ -2578,45 +2578,6 @@ public final class Settings {
         public static final String POINTER_SPEED = "pointer_speed";
 
         /**
-         * Whether to enable pie controls?
-         * The value is integer:
-         * 2 = always on
-         * 1 = expanded desktop
-         * 0 = off
-         * Default: 0
-         * @hide
-         */
-        public static final String PIE_CONTROLS = "pie_controls";
-
-        /**
-         * Locations of the pie in the screen.
-         * (1<<0) = LEFT
-         * (1<<1) = BOTTOM
-         * (1<<2) = RIGHT
-         * (1<<3) = TOP
-         * Default: BOTTOM
-         * @hide
-         */
-        public static final String PIE_POSITIONS = "pie_positions";
-
-        /**
-         * Relative pie size (fraction)
-         * Default: 1.0f
-         * @hide
-         */
-        public static final String PIE_SIZE = "pie_size";
-
-        /**
-         * Sensitivity for triggering the pie controls.
-         *  1 = hard
-         *  ...
-         *  3 = easy
-         *  Default: 3
-         * @hide
-         */
-        public static final String PIE_SENSITIVITY = "pie_sensitivity";
-
-        /**
          * Quick Settings Panel Tiles to Use
          *
          * @hide
