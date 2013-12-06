@@ -125,7 +125,6 @@ public class PieController implements BaseStatusBar.NavigationBarCallback, PieVi
     private Drawable mBackIcon;
     private Drawable mBackAltIcon;
 
-    protected int mExpandedDesktopState;
     private int mPieTriggerSlots;
     private int mPieTriggerMask = PiePosition.LEFT.FLAG
             | PiePosition.BOTTOM.FLAG
@@ -214,10 +213,6 @@ public class PieController implements BaseStatusBar.NavigationBarCallback, PieVi
             // trigger setupContainer()
             resolver.registerContentObserver(Settings.System.getUriFor(
                     Settings.System.PIE_CONTROLS), false, this, UserHandle.USER_ALL);
-            resolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.System.EXPANDED_DESKTOP_STATE), false, this, UserHandle.USER_ALL);
-            resolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.System.EXPANDED_DESKTOP_STYLE), false, this, UserHandle.USER_ALL);
             // trigger setupListener()
             resolver.registerContentObserver(Settings.System.getUriFor(
                     Settings.System.PIE_POSITIONS), false, this, UserHandle.USER_ALL);
@@ -228,14 +223,7 @@ public class PieController implements BaseStatusBar.NavigationBarCallback, PieVi
         @Override
         public void onChange(boolean selfChange) {
             ContentResolver resolver = mContext.getContentResolver();
-            boolean expanded = Settings.System.getIntForUser(resolver,
-                    Settings.System.EXPANDED_DESKTOP_STATE, 0, UserHandle.USER_CURRENT) == 1;
-            if (expanded) {
-                mExpandedDesktopState = Settings.System.getIntForUser(resolver,
-                        Settings.System.EXPANDED_DESKTOP_STYLE, 0, UserHandle.USER_CURRENT);
-            } else {
-                mExpandedDesktopState = 0;
-            }
+          
             if (isEnabled()) {
                 setupContainer();
                 setupNavigationItems();
@@ -700,7 +688,7 @@ public class PieController implements BaseStatusBar.NavigationBarCallback, PieVi
         int pie = Settings.System.getIntForUser(mContext.getContentResolver(),
                 Settings.System.PIE_CONTROLS, 0, UserHandle.USER_CURRENT);
 
-        return (pie == 1 && mExpandedDesktopState != 0) || pie == 2;
+        return pie == 1 || pie == 2;
     }
 
     public String getOperatorState() {
