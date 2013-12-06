@@ -28,7 +28,6 @@ import com.android.systemui.recent.RecentTasksLoader;
 import com.android.systemui.recent.RecentsActivity;
 import com.android.systemui.recent.TaskDescription;
 import com.android.systemui.statusbar.policy.NotificationRowLayout;
-import com.android.systemui.statusbar.policy.PieController;
 import com.android.systemui.statusbar.tablet.StatusBarPanel;
 
 import android.app.ActivityManager;
@@ -39,7 +38,6 @@ import android.app.PendingIntent;
 import android.app.TaskStackBuilder;
 import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -60,7 +58,6 @@ import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.os.UserHandle;
 import android.provider.Settings;
-import android.service.pie.PieManager;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -165,9 +162,6 @@ public abstract class BaseStatusBar extends SystemUI implements
     };
     private ArrayList<NavigationBarCallback> mNavigationCallbacks =
             new ArrayList<NavigationBarCallback>();
-
-    // Pie Control
-    protected PieController mPieController;
 
     // UI-specific methods
 
@@ -337,12 +331,6 @@ public abstract class BaseStatusBar extends SystemUI implements
                    ));
         }
 
-        if (PieManager.getInstance().isPresent()) {
-            mPieController = new PieController(mContext);
-            mPieController.attachStatusBar(this);
-            addNavigationBarCallback(mPieController);
-        }
-
         mCurrentUserId = ActivityManager.getCurrentUser();
 
         IntentFilter filter = new IntentFilter();
@@ -355,9 +343,6 @@ public abstract class BaseStatusBar extends SystemUI implements
                     mCurrentUserId = intent.getIntExtra(Intent.EXTRA_USER_HANDLE, -1);
                     if (true) Slog.v(TAG, "userId " + mCurrentUserId + " is in the house");
                     userSwitched(mCurrentUserId);
-                    if (mPieController != null) {
-                        mPieController.userSwitched(mCurrentUserId);
-                    }
                 }
             }
         }, filter);
@@ -1277,14 +1262,6 @@ public abstract class BaseStatusBar extends SystemUI implements
     protected void propagateDisabledFlags(int disabledFlags) {
         for (NavigationBarCallback callback : mNavigationCallbacks) {
             callback.setDisabledFlags(disabledFlags);
-        }
-    }
-
-    // Pie Controls
-
-    public void updatePieTriggerMask(int newMask) {
-        if (mPieController != null) {
-            mPieController.updatePieTriggerMask(newMask);
         }
     }
 }
