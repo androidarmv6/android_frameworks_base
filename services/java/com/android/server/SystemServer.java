@@ -241,6 +241,9 @@ class ServerThread {
         boolean disableNonCoreServices = SystemProperties.getBoolean("config.disable_noncore", false);
         boolean disableNetwork = SystemProperties.getBoolean("config.disable_network", false);
 
+        boolean lowMem = SystemProperties.getBoolean("ro.config.low_ram", false);
+        boolean disableAtlas = SystemProperties.getBoolean("config.disable_atlas", lowMem);
+
         try {
             Slog.i(TAG, "Display Manager");
             display = new DisplayManagerService(context, wmHandler);
@@ -884,7 +887,7 @@ class ServerThread {
                 }
             }
 
-            if (!disableNonCoreServices) {
+            if (!disableNonCoreServices && !disableAtlas) {
                 try {
                     Slog.i(TAG, "Assets Atlas Service");
                     atlas = new AssetAtlasService(context);
