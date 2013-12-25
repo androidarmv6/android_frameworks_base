@@ -224,7 +224,6 @@
                 <action android:name="android.service.dreams.DreamService" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
-            <meta-data
         </service>
 
         <activity android:name=".Somnambulator"
