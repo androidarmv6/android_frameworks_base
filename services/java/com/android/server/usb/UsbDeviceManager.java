@@ -213,6 +213,8 @@ public class UsbDeviceManager {
 
         if ("mtp,adb".equals(SystemProperties.get("persist.sys.usb.config"))) {
             mUseUsbNotification = true;
+        } else if (massStorageSupported) {
+            mUseUsbNotification = true;
         } else {
             mUseUsbNotification = !massStorageSupported;
         }
