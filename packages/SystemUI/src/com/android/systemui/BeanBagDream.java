@@ -16,8 +16,6 @@
 
 package com.android.systemui;
 
-import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
 import android.service.dreams.DreamService;
 
 import com.android.systemui.BeanBag.Board;
@@ -31,8 +29,7 @@ public class BeanBagDream extends DreamService {
         super.onAttachedToWindow();
         setInteractive(true);
         setFullscreen(true);
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-        mBoard = new Board(this, null, prefs.getBoolean("beanbag_dream_cid", false));
+        mBoard = new Board(this, null);
         setContentView(mBoard);
     }
 

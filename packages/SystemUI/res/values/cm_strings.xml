@@ -67,10 +67,6 @@
     <string name="quick_settings_volume">Volume</string>
     <string name="quick_settings_camera_label">Camera</string>
 
-    <!-- Expanded desktop strings break the rules a bit - the icon identifies the feature, the string indicates current state -->
-    <string name="quick_settings_expanded_desktop">Expanded</string>
-    <string name="quick_settings_expanded_desktop_off">Normal</string>
-
     <!-- Camera tile toasts -->
     <string name="quick_settings_camera_error_connect">Can\'t connect to camera</string>
 
@@ -90,13 +86,4 @@
     <string name="navbar_menu_always_button">Menu (alwaysShow) button</string>
     <string name="navbar_menu_big_button">Menu button</string>
 
-    <!-- Battery status in pie controls -->
-    <string name="pie_battery_status_charging">Charging (<xliff:g id="percent">%d</xliff:g>%%)</string>
-    <string name="pie_battery_status_full">Charged</string>
-    <string name="pie_battery_status_discharging"><xliff:g id="percent">%d</xliff:g>%% remaining</string>
-
-    <!-- Phone status in pie controls -->
-    <string name="pie_phone_status_no_service">No service</string>
-    <string name="pie_phone_status_airplane_mode">Airplane mode on</string>
-    <string name="pie_phone_status_emergency_only">Emergency calls only</string>
 </resources>
