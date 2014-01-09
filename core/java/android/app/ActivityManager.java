@@ -385,9 +385,10 @@ public class ActivityManager {
         MemInfoReader reader = new MemInfoReader();
         reader.readMemInfo();
         if ((reader.getTotalSize() >= (512*1024*1024)
-                || SystemProperties.getBoolean("persist.sys.ui.hw", false))) {
+                || SystemProperties.getBoolean("persist.sys.force_highendgfx", false))) {
             // If the device has at least 512MB RAM available to the kernel,
             // we can afford the overhead of graphics acceleration.
+            // Alternatively, force-enable if the appropriate property is set.
             return true;
         }
 
