@@ -1407,4 +1407,11 @@
     <bool name="config_setup_mms_data">false</bool>
     <!-- Configuration to play sms ringtone during MO/MT call -->
     <bool name="config_sms_ringtone_incall">false</bool>
+    <!-- Configuration to set delete any partial segments expire age -->
+    <!-- 30 days by default (60 * 60 * 1000) * 24 * 30 , no long so use string-->
+    <string name="config_partial_segment_expire_age">2592000000</string>
+
+    <!-- Configuration to enable non-default PDP during IWLAN -->
+    <bool name="config_feature_iwlan_enabled">false</bool>
+
 </resources>
