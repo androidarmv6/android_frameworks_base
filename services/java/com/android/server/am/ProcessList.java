@@ -208,8 +208,8 @@ final class ProcessList {
         float scale = scaleMem > scaleDisp ? scaleMem : scaleDisp;
         if (scale < 0) scale = 0;
         else if (scale > 1) scale = 1;
-        int minfree_adj = Resources.getSystem().getInteger(
-                com.android.internal.R.integer.config_lowMemoryKillerMinFreeKbytesAdjust);
+        int minfree_adj = SystemProperties.getInt("persist.sys.minfree_adj", Resources.getSystem().getInteger(
+                com.android.internal.R.integer.config_lowMemoryKillerMinFreeKbytesAdjust));
         int minfree_abs = Resources.getSystem().getInteger(
                 com.android.internal.R.integer.config_lowMemoryKillerMinFreeKbytesAbsolute);
         if (false) {
