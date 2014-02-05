@@ -151,8 +151,8 @@ final class ProcessList {
     // These are the low-end OOM level limits.  This is appropriate for an
     // HVGA or smaller phone with less than 512MB.  Values are in KB.
     private final long[] mOomMinFreeLow = new long[] {
-            8192, 12288, 16384,
-            24576, 28672, 32768
+            4096, 8192, 16384,
+            24576, 32768, 40960
     };
     // These are the high-end OOM level limits.  This is appropriate for a
     // 1280x800 or larger screen with around 1GB RAM.  Values are in KB.
