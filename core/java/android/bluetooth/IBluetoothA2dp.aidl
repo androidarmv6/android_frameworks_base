@@ -38,4 +38,5 @@ interface IBluetoothA2dp {
     boolean isA2dpPlaying(in BluetoothDevice device);
     void sendPassThroughCmd(int keyCode, int keyState);
     boolean isAvrcpConnected(in BluetoothDevice device);
+    void activateSink (boolean isEnable);
 }

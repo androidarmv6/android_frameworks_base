@@ -552,6 +552,22 @@ public final class BluetoothA2dp implements BluetoothProfile {
       Log.d(TAG, msg);
     }
 
+    /**
+     * This function activates/deactivates A2DP Sink
+     * on local device.
+     * @hide
+     */
+    public void activateSink( boolean isEnable) {
+        if (mService != null && isEnabled()) {
+            try {
+                mService.activateSink(isEnable);
+            } catch (RemoteException e) {
+                Log.e(TAG, "Stack:" + Log.getStackTraceString(new Throwable()));
+            }
+        }
+        if (mService == null) Log.w(TAG, "Proxy not attached to service");
+    }
+
     /** @hide */
     public void sendPassThroughCmd(int keyCode, int keyState) {
         if (DBG) Log.d(TAG, "sendPassThroughCmd");
