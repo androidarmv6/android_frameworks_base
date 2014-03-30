@@ -70,6 +70,10 @@ jint android_os_FileUtils_getVolumeUUID(JNIEnv* env, jobject clazz, jstring path
     fclose(fp);
 
     if (findDevice) {
+        if (strncmp(device, "/dev/fuse", 9) == 0) {
+            strcpy(device, "/dev/block/mmcblk0p1");
+            ALOGD("UUID workaround: mapping /dev/fuse to %s", device);
+        }
         uuid = blkid_get_tag_value(NULL, "UUID", device);
     } else {
         uuid = blkid_get_tag_value(NULL, "UUID", pathStr);
