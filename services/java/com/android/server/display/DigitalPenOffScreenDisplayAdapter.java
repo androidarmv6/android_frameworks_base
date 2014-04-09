@@ -41,6 +41,9 @@ import android.view.SurfaceControl;
 import android.os.ServiceManager;
 import android.os.SystemProperties;
 import android.content.res.Resources;
+import codeaurora.ultrasound.IDigitalPenDimensionsCallback;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 /**
  * Provides a virtual display for the digital pen off-screen
@@ -53,17 +56,19 @@ final class DigitalPenOffScreenDisplayAdapter extends DisplayAdapter {
     private static final String TAG = "DigitalPenOffScreenDisplayAdapter";
     private DigitalPenOffScreenDisplayDevice mDevice;
     public static final String DISPLAY_NAME = "Digital Pen off-screen display";
-    private static final boolean digitalPenCapable =
+    private static final boolean mDigitalPenCapable =
       Resources.getSystem().getBoolean(com.android.internal.R.bool.config_digitalPenCapable);
+    private DimensionsCallback mCallback;
 
     // Called with SyncRoot lock held.
     public DigitalPenOffScreenDisplayAdapter(DisplayManagerService.SyncRoot syncRoot,
             Context context, Handler handler, Listener listener) {
         super(syncRoot, context, handler, listener, TAG);
+        mCallback = new DimensionsCallback();
     }
 
     public static boolean isDigitalPenDisabled() {
-        return !digitalPenCapable;
+        return !mDigitalPenCapable;
     }
 
     public static String getDisplayName() {
@@ -76,16 +81,39 @@ final class DigitalPenOffScreenDisplayAdapter extends DisplayAdapter {
 
         IBinder displayToken = SurfaceControl.createDisplay(getDisplayName(), false);
 
-        Slog.i(TAG, "About to sendDisplayDeviceEventLocked()");
-        if(null == displayToken) {
-            Slog.i(TAG, "displayToken == NULL");
-        }
-        else
-        {
-            Slog.i(TAG, "displayToken != NULL");
-        }
         mDevice = new DigitalPenOffScreenDisplayDevice(displayToken);
         sendDisplayDeviceEventLocked(mDevice, DISPLAY_DEVICE_EVENT_ADDED);
+
+        registerOffScreenDimensionsCallbackLocked();
+    }
+
+    private void registerOffScreenDimensionsCallbackLocked() {
+        IBinder digitalPenService = ServiceManager.getService("DigitalPen");
+        if (digitalPenService == null) {
+            return;
+        }
+        Class digitalPenServiceClass = digitalPenService.getClass();
+        try {
+            Class args[] = {
+              IDigitalPenDimensionsCallback.class
+            };
+
+            Method registerCallbackMethod =
+              digitalPenServiceClass.getMethod("registerOffScreenDimensionsCallback", args);
+            registerCallbackMethod.invoke(digitalPenService,
+                                          mCallback);
+        } catch (InvocationTargetException e) {
+            Slog.i(TAG,
+              "DigitalPenService.registerOffScreenDimensionsCallback - InvocationTargetException");
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            Slog.i(TAG,
+              "DigitalPenService.registerOffScreenDimensionsCallback - IllegalAccessException");
+            e.printStackTrace();
+        } catch (Throwable t) {
+            Slog.i(TAG, "DigitalPenService.registerOffScreenDimensionsCallback Not available.");
+            t.printStackTrace();
+        }
     }
 
     private final class DigitalPenOffScreenDisplayDevice extends DisplayDevice {
@@ -137,8 +165,18 @@ final class DigitalPenOffScreenDisplayAdapter extends DisplayAdapter {
       public void setDimesionsLocked(int width, int height) {
               mHeight = height;
               mWidth = width;
-              mName += "!";
               mInfo = null;
+      }
+    }
+
+    private final class DimensionsCallback extends IDigitalPenDimensionsCallback.Stub {
+      public void onDimensionsChange(int width, int height) {
+        Slog.i(TAG, "DimensionsCallback was called with w: " + width + " h: " + height);
+        synchronized (getSyncRoot()) {
+          mDevice.setDimesionsLocked(width, height);
+          sendDisplayDeviceEventLocked(mDevice, DISPLAY_DEVICE_EVENT_REMOVED);
+          sendDisplayDeviceEventLocked(mDevice, DISPLAY_DEVICE_EVENT_ADDED);
+        }
       }
     }
 }
