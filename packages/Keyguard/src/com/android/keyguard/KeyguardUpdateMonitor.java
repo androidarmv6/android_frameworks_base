@@ -257,6 +257,22 @@ public class KeyguardUpdateMonitor {
                         clientGeneration, (clearing ? 1 : 0), mediaIntent);
             mHandler.sendMessage(msg);
         }
+
+        @Override
+        public void updateFolderInfoBrowsedPlayer(String stringUri) {
+        }
+
+        @Override
+        public void updateNowPlayingContentChange() {
+        }
+
+        @Override
+        public void playItemResponse(boolean success) {
+        }
+
+        @Override
+        public void updateNowPlayingEntries(long[] playList) {
+        }
     };
 
     private final BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {

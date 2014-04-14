@@ -192,6 +192,7 @@ interface IAudioService {
      * @param timeMs the time in ms to seek to, must be positive.
      */
      void setRemoteControlClientPlaybackPosition(int generationId, long timeMs);
+
      /**
       * Notify the user of a RemoteControlClient that it should update its metadata with the
       * new value for the given key.
@@ -236,4 +237,10 @@ interface IAudioService {
     AudioRoutesInfo startWatchingRoutes(in IAudioRoutesObserver observer);
 
     boolean isCameraSoundForced();
+
+    void setRemoteControlClientBrowsedPlayer (in String packageName);
+
+    void getRemoteControlClientNowPlayingEntries(int generationId);
+
+    void setRemoteControlClientPlayItem(int generationId, long uid, int scope);
 }

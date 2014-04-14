@@ -330,6 +330,9 @@ public class MediaFocusControl implements OnFinished {
     private static final int MSG_RCC_UPDATE_METADATA = 9;
     private static final int MSG_RCDISPLAY_INIT_INFO = 10;
     private static final int MSG_REEVALUATE_RCD = 11;
+    private static final int MSG_RCC_SET_BROWSED_PLAYER = 12;
+    private static final int MSG_RCC_SET_PLAY_ITEM = 13;
+    private static final int MSG_RCC_GET_NOW_PLAYING_ENTRIES = 14;
 
     // sendMsg() flags
     /** If the msg is already queued, replace it with this one. */
@@ -395,6 +398,22 @@ public class MediaFocusControl implements OnFinished {
                 case MSG_RCC_SEEK_REQUEST:
                     onSetRemoteControlClientPlaybackPosition(
                             msg.arg1 /* generationId */, ((Long)msg.obj).longValue() /* timeMs */);
+                    break;
+
+                case MSG_RCC_SET_PLAY_ITEM:
+                    Log.d(TAG, "MSG_RCC_SET_PLAY_ITEM: "+ ((Long)msg.obj).longValue());
+                    onSetRemoteControlClientPlayItem(msg.arg1 /* generationId */,
+                            msg.arg2 /* scope */, ((Long)msg.obj).longValue() /* uid */);
+                    break;
+
+                case MSG_RCC_GET_NOW_PLAYING_ENTRIES:
+                    Log.d(TAG, "MSG_RCC_GET_NOW_PLAYING_ENTRIES: "+ msg.arg1);
+                    onGetRemoteControlClientNowPlayingEntries(msg.arg1 /* generationId */);
+                    break;
+
+                case MSG_RCC_SET_BROWSED_PLAYER:
+                    Log.d(TAG, "MSG_RCC_SET_BROWSED_PLAYER: "+ (String) msg.obj);
+                    onSetRemoteControlClientBrowsedPlayer((String) msg.obj /* packageName */);
                     break;
 
                 case MSG_RCC_UPDATE_METADATA:
@@ -2438,6 +2457,85 @@ public class MediaFocusControl implements OnFinished {
                         Log.e(TAG, "Current valid remote client is dead: "+e);
                         mCurrentRcClient = null;
                     }
+                }
+            }
+        }
+    }
+
+    public void setRemoteControlClientPlayItem(int generationId, long uid, int scope) {
+        synchronized(mRCStack) {
+            synchronized(mCurrentRcLock) {
+                if (mCurrentRcClientGen != generationId) {
+                    return;
+                }
+            }
+        }
+        sendMsg(mEventHandler, MSG_RCC_SET_PLAY_ITEM, SENDMSG_REPLACE, generationId /* arg1 */,
+                scope /* arg2*/, new Long(uid) /* obj */, 0 /* delay */);
+    }
+
+    private void onSetRemoteControlClientPlayItem(int generationId, int scope, Long uid) {
+        Log.d(TAG, "onSetRemoteControlClientPlayItem: "+ uid);
+        synchronized(mRCStack) {
+            synchronized(mCurrentRcLock) {
+                if ((mCurrentRcClient != null) && (mCurrentRcClientGen == generationId)) {
+                    try {
+                        mCurrentRcClient.setPlayItem(generationId, scope, uid);
+                    } catch (RemoteException e) {
+                        Log.e(TAG, "Current valid remote client is dead: "+e);
+                        mCurrentRcClient = null;
+                    }
+                }
+            }
+        }
+    }
+
+    public void getRemoteControlClientNowPlayingEntries(int generationId) {
+        synchronized(mRCStack) {
+            synchronized(mCurrentRcLock) {
+                if (mCurrentRcClientGen != generationId) {
+                    return;
+                }
+            }
+        }
+        sendMsg(mEventHandler, MSG_RCC_GET_NOW_PLAYING_ENTRIES, SENDMSG_REPLACE,
+                generationId /* arg1 */, 0 /* arg2 ignored*/, 0 /* obj */, 0 /* delay */);
+    }
+
+    private void onGetRemoteControlClientNowPlayingEntries(int generationId) {
+        Log.d(TAG, "onGetRemoteControlClientNowPlayingEntries: ");
+        synchronized(mRCStack) {
+            synchronized(mCurrentRcLock) {
+                if ((mCurrentRcClient != null) && (mCurrentRcClientGen == generationId)) {
+                    try {
+                        mCurrentRcClient.getNowPlayingEntries(generationId);
+                    } catch (RemoteException e) {
+                        Log.e(TAG, "Current valid remote client is dead: "+e);
+                        mCurrentRcClient = null;
+                    }
+                }
+            }
+        }
+    }
+
+    public void setRemoteControlClientBrowsedPlayer(String packageName) {
+        Log.d(TAG, "setRemoteControlClientBrowsedPlayer: "+ packageName);
+        sendMsg(mEventHandler, MSG_RCC_SET_BROWSED_PLAYER, SENDMSG_REPLACE, 0 /* arg1 */,
+                0 /* arg2 ignored*/, packageName /* obj */, 0 /* delay */);
+    }
+
+    private void onSetRemoteControlClientBrowsedPlayer(String packageName) {
+        Log.d(TAG, "onSetRemoteControlClientBrowsedPlayer: "+ packageName);
+        Iterator<RemoteControlStackEntry> stackIterator = mRCStack.iterator();
+        while(stackIterator.hasNext()) {
+            RemoteControlStackEntry rcse = stackIterator.next();
+            if ((rcse != null) && (rcse.mCallingPackageName != null) &&
+                            (rcse.mCallingPackageName.equals(packageName))) {
+                try {
+                    Log.d(TAG, "call setBrowsedPlayer");
+                    rcse.mRcClient.setBrowsedPlayer();
+                } catch (RemoteException e) {
+                    Log.e(TAG, "Dead client: ", e);
                 }
             }
         }

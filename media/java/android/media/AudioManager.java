@@ -2519,6 +2519,55 @@ public class AudioManager {
 
     /**
      * @hide
+     * Request the user of a RemoteControlClient to play the requested item.
+     * @param generationId the RemoteControlClient generation counter for which this request is
+     *     issued.
+     * @param uid uid of the song to be played.
+     * @scope scope of the file system to use
+     */
+    public void setRemoteControlClientPlayItem(int generationId, long uid, int scope) {
+        IAudioService service = getService();
+        try {
+            service.setRemoteControlClientPlayItem(generationId, uid, scope);
+        } catch (RemoteException e) {
+            Log.e(TAG, "Dead object in setRemoteControlClientPlayItem("+ generationId
+                + ", " + uid + ", " + scope + ")", e);
+        }
+    }
+
+    /**
+     * @hide
+     * Request the user of a RemoteControlClient to provide with the now playing list entries.
+     * @param generationId the RemoteControlClient generation counter for which this request is
+     *     issued.
+     */
+    public void getRemoteControlClientNowPlayingEntries(int generationId) {
+        IAudioService service = getService();
+        try {
+            service.getRemoteControlClientNowPlayingEntries(generationId);
+        } catch (RemoteException e) {
+            Log.e(TAG, "Dead object in getRemoteControlClientNowPlayingEntries("+ generationId
+                + ")", e);
+        }
+    }
+
+    /**
+     * @hide
+     * Request the user of a RemoteControlClient to set the music player as current browsed player.
+     * @param packageName package name of the targeted media player.
+     */
+    public void setRemoteControlClientBrowsedPlayer(String packageName) {
+        Log.d(TAG, "setRemoteControlClientBrowsedPlayer: "+ packageName);
+        IAudioService service = getService();
+        try {
+            service.setRemoteControlClientBrowsedPlayer(packageName);
+        } catch (RemoteException e) {
+            Log.e(TAG, "Dead object in setRemoteControlClientBrowsedPlayer("+ packageName + ")", e);
+        }
+    }
+
+    /**
+     * @hide
      * Notify the user of a RemoteControlClient that it should update its metadata with the
      * new value for the given key.
      * @param generationId the RemoteControlClient generation counter for which this request is

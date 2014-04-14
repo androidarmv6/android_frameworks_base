@@ -572,6 +572,18 @@ public final class RemoteController
 
         }
 
+        public void updateFolderInfoBrowsedPlayer(String stringUri) {
+        }
+
+        public void updateNowPlayingEntries(long[] playList) {
+        }
+
+        public void updateNowPlayingContentChange() {
+        }
+
+        public void playItemResponse(boolean success) {
+        }
+
         public void setTransportControlInfo(int genId, int transportControlFlags,
                 int posCapabilities) {
             final RemoteController rc = mController.get();
