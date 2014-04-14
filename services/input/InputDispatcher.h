@@ -37,6 +37,16 @@
 #include "InputApplication.h"
 #include "InputListener.h"
 
+/*
+ * Number of displays supported in mTouchState
+ */
+#define MAX_DISPLAY_IDS 2
+
+/*
+ * Indices of the touch state suitable for every display
+ */
+#define MAIN_DISPLAY_INDEX     0
+#define EXTERNAL_DISPLAY_INDEX 1
 
 namespace android {
 
@@ -959,7 +969,7 @@ private:
         bool isSlippery() const;
     };
 
-    TouchState mTouchState;
+    TouchState mTouchState[MAX_DISPLAY_IDS];
     TouchState mTempTouchState;
 
     // Focused application.
