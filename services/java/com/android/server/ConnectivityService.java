@@ -46,7 +46,9 @@ import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.database.ContentObserver;
@@ -417,6 +419,8 @@ public class ConnectivityService extends IConnectivityManager.Stub {
 
     private SettingsObserver mSettingsObserver;
 
+    private AppOpsManager mAppOpsManager;
+
     NetworkConfig[] mNetConfigs;
     int mNetworksDefined;
 
@@ -703,6 +707,8 @@ public class ConnectivityService extends IConnectivityManager.Stub {
         filter = new IntentFilter();
         filter.addAction(CONNECTED_TO_PROVISIONING_NETWORK_ACTION);
         mContext.registerReceiver(mProvisioningReceiver, filter);
+
+        mAppOpsManager = (AppOpsManager) context.getSystemService(Context.APP_OPS_SERVICE);
     }
 
     /**
@@ -1535,6 +1541,40 @@ public class ConnectivityService extends IConnectivityManager.Stub {
     }
 
     /**
+     * Check if the address falls into any of currently running VPN's route's.
+     */
+    private boolean isAddressUnderVpn(InetAddress address) {
+        synchronized (mVpns) {
+            synchronized (mRoutesLock) {
+                int uid = UserHandle.getCallingUserId();
+                Vpn vpn = mVpns.get(uid);
+                if (vpn == null) {
+                    return false;
+                }
+
+                // Check if an exemption exists for this address.
+                for (LinkAddress destination : mExemptAddresses) {
+                    if (!NetworkUtils.addressTypeMatches(address, destination.getAddress())) {
+                        continue;
+                    }
+
+                    int prefix = destination.getNetworkPrefixLength();
+                    InetAddress addrMasked = NetworkUtils.getNetworkPart(address, prefix);
+                    InetAddress destMasked = NetworkUtils.getNetworkPart(destination.getAddress(),
+                            prefix);
+
+                    if (addrMasked.equals(destMasked)) {
+                        return false;
+                    }
+                }
+
+                // Finally check if the address is covered by the VPN.
+                return vpn.isAddressCovered(address);
+            }
+        }
+    }
+
+    /**
      * @deprecated use requestRouteToHostAddress instead
      *
      * Ensure that a network route exists to deliver traffic to the specified
@@ -1545,14 +1585,14 @@ public class ConnectivityService extends IConnectivityManager.Stub {
      * desired
      * @return {@code true} on success, {@code false} on failure
      */
-    public boolean requestRouteToHost(int networkType, int hostAddress) {
+    public boolean requestRouteToHost(int networkType, int hostAddress, String packageName) {
         InetAddress inetAddress = NetworkUtils.intToInetAddress(hostAddress);
 
         if (inetAddress == null) {
             return false;
         }
 
-        return requestRouteToHostAddress(networkType, inetAddress.getAddress());
+        return requestRouteToHostAddress(networkType, inetAddress.getAddress(), packageName);
     }
 
     /**
@@ -1564,10 +1604,39 @@ public class ConnectivityService extends IConnectivityManager.Stub {
      * desired
      * @return {@code true} on success, {@code false} on failure
      */
-    public boolean requestRouteToHostAddress(int networkType, byte[] hostAddress) {
+    public boolean requestRouteToHostAddress(int networkType, byte[] hostAddress,
+            String packageName) {
         enforceChangePermission();
         if (mProtectedNetworks.contains(networkType)) {
             enforceConnectivityInternalPermission();
+        }
+        boolean exempt;
+        InetAddress addr;
+        try {
+            addr = InetAddress.getByAddress(hostAddress);
+        } catch (UnknownHostException e) {
+            if (DBG) log("requestRouteToHostAddress got " + e.toString());
+            return false;
+        }
+        // System apps may request routes bypassing the VPN to keep other networks working.
+        if (Binder.getCallingUid() == Process.SYSTEM_UID) {
+            exempt = true;
+        } else {
+            mAppOpsManager.checkPackage(Binder.getCallingUid(), packageName);
+            try {
+                ApplicationInfo info = mContext.getPackageManager().getApplicationInfo(packageName,
+                        0);
+                exempt = (info.flags & ApplicationInfo.FLAG_SYSTEM) != 0;
+            } catch (NameNotFoundException e) {
+                throw new IllegalArgumentException("Failed to find calling package details", e);
+            }
+        }
+
+        // Non-exempt routeToHost's can only be added if the host is not covered by the VPN.
+        // This can be either because the VPN's routes do not cover the destination or a
+        // system application added an exemption that covers this destination.
+        if (!exempt && isAddressUnderVpn(addr)) {
+            return false;
         }
 
         if (!ConnectivityManager.isNetworkTypeValid(networkType)) {
@@ -1592,18 +1661,13 @@ public class ConnectivityService extends IConnectivityManager.Stub {
         }
         final long token = Binder.clearCallingIdentity();
         try {
-            InetAddress addr = InetAddress.getByAddress(hostAddress);
             LinkProperties lp = tracker.getLinkProperties();
-            boolean ok = addRouteToAddress(lp, addr, EXEMPT);
+            boolean ok = addRouteToAddress(lp, addr, exempt);
             if (DBG) log("requestRouteToHostAddress ok=" + ok);
             return ok;
-        } catch (UnknownHostException e) {
-            if (DBG) log("requestRouteToHostAddress got " + e.toString());
         } finally {
             Binder.restoreCallingIdentity(token);
         }
-        if (DBG) log("requestRouteToHostAddress X bottom return false");
-        return false;
     }
 
     private boolean addRoute(LinkProperties p, RouteInfo r, boolean toDefaultTable,
@@ -4382,7 +4446,7 @@ public class ConnectivityService extends IConnectivityManager.Stub {
 
                             // Make a route to host so we check the specific interface.
                             if (mCs.requestRouteToHostAddress(ConnectivityManager.TYPE_MOBILE_HIPRI,
-                                    hostAddr.getAddress())) {
+                                    hostAddr.getAddress(), null)) {
                                 // Wait a short time to be sure the route is established ??
                                 log("isMobileOk:"
                                         + " wait to establish route to hostAddr=" + hostAddr);
