@@ -1447,4 +1447,6 @@
             1xRTT voice call, irrespective of IMS registration state  -->
     <bool name="config_send_sms1x_on_voice_call">true</bool>
 
+    <!-- Is the device LTE capable -->
+    <bool name="config_lte_capable">true</bool>
 </resources>
