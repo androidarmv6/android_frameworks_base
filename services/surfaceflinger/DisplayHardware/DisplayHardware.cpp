@@ -53,7 +53,9 @@ void checkGLErrors()
         GLenum error = glGetError();
         if (error == GL_NO_ERROR)
             break;
+#ifndef BCM_HARDWARE
         LOGE("GL error 0x%04x", int(error));
+#endif
     } while(true);
 }
 
@@ -110,10 +112,16 @@ static status_t selectConfigForPixelFormat(
     EGLint numConfigs = -1, n=0;
     eglGetConfigs(dpy, NULL, 0, &numConfigs);
     EGLConfig* const configs = new EGLConfig[numConfigs];
+#ifdef BCM_HARDWARE
+    LOGE("eglChooseConfig %d",n);
+#endif
     eglChooseConfig(dpy, attrs, configs, numConfigs, &n);
     for (int i=0 ; i<n ; i++) {
         EGLint nativeVisualId = 0;
         eglGetConfigAttrib(dpy, configs[i], EGL_NATIVE_VISUAL_ID, &nativeVisualId);
+#ifdef BCM_HARDWARE
+	LOGE("get attrib %d %d",format,nativeVisualId);
+#endif
         if (nativeVisualId>0 && format == nativeVisualId) {
             *outConfig = configs[i];
             delete [] configs;
@@ -317,7 +325,9 @@ void DisplayHardware::init(uint32_t dpy)
     LOGI("flags = %08x", mFlags);
 
     // Unbind the context from this thread
+#ifndef BCM_HARDWARE
     eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+#endif
 
 
     // initialize the H/W composer

@@ -169,7 +169,7 @@ struct egl_surface_t
     virtual     EGLint      getSwapBehavior() const;
     virtual     EGLBoolean  swapBuffers();
     virtual     EGLBoolean  setSwapRectangle(EGLint l, EGLint t, EGLint w, EGLint h);
-#ifdef QCOM_HARDWARE
+#if defined QCOM_HARDWARE || defined BCM_HARDWARE
     virtual     EGLClientBuffer getRenderBuffer() const;
 #endif
 protected:
@@ -215,7 +215,7 @@ EGLBoolean egl_surface_t::setSwapRectangle(
 {
     return EGL_FALSE;
 }
-#ifdef QCOM_HARDWARE
+#if defined QCOM_HARDWARE || defined BCM_HARDWARE
 EGLClientBuffer egl_surface_t::getRenderBuffer() const {
     return 0;
 }
@@ -245,7 +245,7 @@ struct egl_window_surface_v2_t : public egl_surface_t
     virtual     EGLint      getRefreshRate() const;
     virtual     EGLint      getSwapBehavior() const;
     virtual     EGLBoolean  setSwapRectangle(EGLint l, EGLint t, EGLint w, EGLint h);
-#ifdef QCOM_HARDWARE
+#if defined QCOM_HARDWARE || defined BCM_HARDWARE
     virtual     EGLClientBuffer  getRenderBuffer() const;
 #endif
     
@@ -655,7 +655,7 @@ EGLBoolean egl_window_surface_v2_t::setSwapRectangle(
     return EGL_TRUE;
 }
 
-#ifdef QCOM_HARDWARE
+#if defined QCOM_HARDWARE || defined BCM_HARDWARE
 EGLClientBuffer egl_window_surface_v2_t::getRenderBuffer() const
 {
     return buffer;
@@ -919,7 +919,7 @@ static char const * const gExtensionsString =
         // "KHR_image_pixmap "
         "EGL_ANDROID_image_native_buffer "
         "EGL_ANDROID_swap_rectangle "
-#ifdef QCOM_HARDWARE
+#if defined QCOM_HARDWARE || defined BCM_HARDWARE
         "EGL_ANDROID_get_render_buffer "
 #endif
         ;
@@ -974,9 +974,13 @@ static const extention_map_t gExtentionMap[] = {
             (__eglMustCastToProperFunctionPointerType)&eglDestroyImageKHR }, 
     { "eglSetSwapRectangleANDROID", 
             (__eglMustCastToProperFunctionPointerType)&eglSetSwapRectangleANDROID }, 
-#ifdef QCOM_HARDWARE
+#if defined QCOM_HARDWARE || defined BCM_HARDWARE
     { "eglGetRenderBufferANDROID",
             (__eglMustCastToProperFunctionPointerType)&eglGetRenderBufferANDROID },
+#endif
+#ifdef BCM_HARDWARE
+    { "eglGetComposerANDROID",
+	    (__eglMustCastToProperFunctionPointerType)&eglGetComposerANDROID },
 #endif
 };
 
@@ -2182,6 +2186,12 @@ EGLBoolean eglDestroyImageKHR(EGLDisplay dpy, EGLImageKHR img)
     return EGL_TRUE;
 }
 
+#ifdef BCM_HARDWARE
+void* eglGetComposerANDROID(EGLDisplay dpy, EGLSurface draw)
+{
+    return NULL;
+}
+
 // ----------------------------------------------------------------------------
 // ANDROID extensions
 // ----------------------------------------------------------------------------
@@ -2204,7 +2214,7 @@ EGLBoolean eglSetSwapRectangleANDROID(EGLDisplay dpy, EGLSurface draw,
     return EGL_TRUE;
 }
 
-#ifdef QCOM_HARDWARE
+#if defined QCOM_HARDWARE || defined BCM_HARDWARE
 EGLClientBuffer eglGetRenderBufferANDROID(EGLDisplay dpy, EGLSurface draw)
 {
     if (egl_display_t::is_valid(dpy) == EGL_FALSE)

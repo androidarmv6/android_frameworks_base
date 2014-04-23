@@ -56,27 +56,52 @@ using namespace android;
             "mrc p15, 0, " #reg ", c13, c0, 3 \n" \
             MUNGE_TLS(reg)
     #else
-        #define GET_TLS(reg) \
-            "mov   " #reg ", #0xFFFF0FFF      \n"  \
-            "ldr   " #reg ", [" #reg ", #-15] \n"
+        #ifdef BCM_HARDWARE
+             #define GET_TLS(reg) \
+                 "push   {r0,r1,r2,r3,lr}          \n"		\
+                 "mov   " #reg ", #0xFFFF0FFF      \n"		\
+                 "sub  " #reg "," #reg ",#0x1F     \n"		\
+                 "blx   " #reg "                   \n"		\
+                 "mov   " #reg ", r0               \n"		\
+                 "pop    {r0,r1,r2,r3,lr}          \n"
+	#else
+	    #define GET_TLS(reg) \
+                "mov   " #reg ", #0xFFFF0FFF      \n"  \
+                "ldr   " #reg ", [" #reg ", #-15] \n"
+	#endif
+        
     #endif
 
     #define API_ENTRY(_api) __attribute__((naked)) _api
 
-    #define CALL_GL_API(_api, ...)                              \
-         asm volatile(                                          \
-            GET_TLS(r12)                                        \
-            "ldr   r12, [r12, %[tls]] \n"                       \
-            "cmp   r12, #0            \n"                       \
-            "ldrne pc,  [r12, %[api]] \n"                       \
-            "mov   r0, #0             \n"                       \
-            "bx    lr                 \n"                       \
-            :                                                   \
-            : [tls] "J"(TLS_SLOT_OPENGL_API*4),                 \
-              [api] "J"(__builtin_offsetof(gl_hooks_t, gl._api))    \
-            :                                                   \
-            );
+    #ifdef BCM_HARDWARE
+        #define CALL_GL_EXTENSION_API(_api)                         \
+             asm volatile(                                          \
+                GET_TLS(r12)                                        \
+                "cmp   r12, #0            \n"                       \
+                "ldrne   r12, [r12, %[tls]] \n"                     \
+                "cmpne   r12, #0            \n"                     \
+                "ldrne pc,  [r12, %[api]] \n"                       \
+                "mov   r0, #0             \n"                       \
+                "bx    lr                 \n"                       \
+    #else
+        #define CALL_GL_API(_api, ...)                              \
+             asm volatile(                                          \
+                GET_TLS(r12)                                        \
+                "ldr   r12, [r12, %[tls]] \n"                       \
+                "cmp   r12, #0            \n"                       \
+                "ldrne pc,  [r12, %[api]] \n"                       \
+                "mov   r0, #0             \n"                       \
+                "bx    lr                 \n"                       \
+                :                                                   \
+                : [tls] "J"(TLS_SLOT_OPENGL_API*4),                 \
+                  [api] "J"(__builtin_offsetof(gl_hooks_t, gl._api))    \
+                :                                                   \
+                );
 
+    #endif
+
+    
     #define CALL_GL_API_RETURN(_api, ...) \
         CALL_GL_API(_api, __VA_ARGS__) \
         return 0; // placate gcc's warnings. never reached.
