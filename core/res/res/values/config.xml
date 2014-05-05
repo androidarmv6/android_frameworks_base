@@ -1452,4 +1452,8 @@
 
     <!-- Is the device LTE capable -->
     <bool name="config_lte_capable">true</bool>
+
+    <!-- Should the device show AM/PM in unlock screen -->
+    <bool name="config_show_ampm_in_unlock_screen">false</bool>
+
 </resources>
