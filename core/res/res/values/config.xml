@@ -1456,4 +1456,6 @@
     <!-- Should the device show AM/PM in unlock screen -->
     <bool name="config_show_ampm_in_unlock_screen">false</bool>
 
+    <!-- config delay timer to start PPPOE -->
+    <integer name="config_delay_startPPPOE_timer" translatable="false">5000</integer>
 </resources>
