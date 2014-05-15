@@ -153,7 +153,9 @@ LOCAL_SRC_FILES:= \
 	android_content_res_Configuration.cpp \
 	android_animation_PropertyValuesHolder.cpp \
 	com_android_internal_net_NetworkStatsFactory.cpp \
-    org_codeaurora_Performance.cpp
+ifeq ($(call is-vendor-board-platform,QCOM),true)
+LOCAL_SRC_FILES += org_codeaurora_Performance.cpp \
+endif
 
 LOCAL_C_INCLUDES += \
 	$(JNI_H_INCLUDE) \
