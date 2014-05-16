@@ -72,6 +72,7 @@ public class AppOpsService extends IAppOpsService.Stub {
     static final boolean DEBUG = false;
     static final int SHOW_PERMISSION_DIALOG = 1;
     static final String WHITELIST_FILE = "persist.sys.whitelist";
+    static final String DEFAULT_WHITELIST_FILE = "/system/etc/whitelist_appops.xml";
 
     // Write at most every 30 minutes.
     static final long WRITE_DELAY = DEBUG ? 1000 : 30*60*1000;
@@ -1171,8 +1172,7 @@ public class AppOpsService extends IAppOpsService.Stub {
         if (!mStrictEnable)
             return false;
 
-        return ((uid > Process.FIRST_APPLICATION_UID) &&
-            !isInWhitelist(packageName));
+        return (!isInWhitelist(packageName));
     }
 
     private boolean isInWhitelist(String packageName) {
@@ -1306,7 +1306,8 @@ public class AppOpsService extends IAppOpsService.Stub {
 
     void readWhitelist() {
         // Read if whitelist file provided
-        String whitelistFileName = SystemProperties.get(WHITELIST_FILE);
+        String whitelistFileName = SystemProperties.get(WHITELIST_FILE,
+                DEFAULT_WHITELIST_FILE);
         if(!mStrictEnable || "".equals(whitelistFileName)) {
             return;
         }
