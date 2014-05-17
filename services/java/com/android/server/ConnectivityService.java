@@ -4129,7 +4129,7 @@ public class ConnectivityService extends IConnectivityManager.Stub {
         return ConnectivityManager.TYPE_NONE;
     }
 
-    protected void updateBlockedUids(int uid, boolean isBlocked) {
+    public void updateBlockedUids(int uid, boolean isBlocked) {
         try {
             AlarmManagerService mAlarmMgrSvc =
                 (AlarmManagerService)ServiceManager.getService(Context.ALARM_SERVICE);
