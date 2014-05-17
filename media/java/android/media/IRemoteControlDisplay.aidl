@@ -95,4 +95,12 @@ oneway interface IRemoteControlDisplay
      * To combine metadata text and artwork in one binder call
      */
     void setAllMetadata(int generationId, in Bundle metadata, in Bitmap artwork);
+
+    void updateFolderInfoBrowsedPlayer(String stringUri);
+
+    void updateNowPlayingContentChange();
+
+    void playItemResponse(boolean success);
+
+    void updateNowPlayingEntries(in long[] playList);
 }

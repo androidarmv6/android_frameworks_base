@@ -630,6 +630,115 @@ public class RemoteControlClient
         }
     }
 
+    /**
+     * @hide
+     */
+    public void playItemResponse(boolean success) {
+        Log.e(TAG, "playItemResponse");
+        synchronized(mCacheLock) {
+            playItemResponse_syncCacheLock(success);
+        }
+    }
+
+    private void playItemResponse_syncCacheLock(boolean success) {
+        Log.d(TAG, "playItemResponse_syncCacheLock");
+        Log.v(TAG, "success: " + success);
+
+        final Iterator<DisplayInfoForClient> displayIterator = mRcDisplays.iterator();
+        while (displayIterator.hasNext()) {
+            final DisplayInfoForClient di = (DisplayInfoForClient) displayIterator.next();
+            if (di.mEnabled) {
+                try {
+                    di.mRcDisplay.playItemResponse(success);
+                } catch (RemoteException e) {
+                    Log.e(TAG, "Error in playItemResponse(), dead display " + di.mRcDisplay, e);
+                    displayIterator.remove();
+                }
+            }
+        }
+    }
+
+    /**
+     * @hide
+     */
+    public void updateNowPlayingEntries(long[] playList) {
+        Log.e(TAG, "updateNowPlayingEntries: Item numbers: " + playList.length);
+        synchronized(mCacheLock) {
+            updateNowPlayingEntries_syncCacheLock(playList);
+        }
+    }
+
+    private void updateNowPlayingEntries_syncCacheLock(long[] playList) {
+        Log.d(TAG, "updateNowPlayingEntries_syncCacheLock");
+
+        final Iterator<DisplayInfoForClient> displayIterator = mRcDisplays.iterator();
+        while (displayIterator.hasNext()) {
+            final DisplayInfoForClient di = (DisplayInfoForClient) displayIterator.next();
+            if (di.mEnabled) {
+                try {
+                    di.mRcDisplay.updateNowPlayingEntries(playList);
+                } catch (RemoteException e) {
+                    Log.e(TAG, "Error in updateNowPlayingEntries(), dead display "
+                                                                    + di.mRcDisplay, e);
+                    displayIterator.remove();
+                }
+            }
+        }
+    }
+
+    /**
+     * @hide
+     */
+    public void updateFolderInfoBrowsedPlayer(String stringUri) {
+        Log.e(TAG, "updateFolderInfoBrowsedPlayer");
+        synchronized(mCacheLock) {
+            updateFolderInfoBrowsedPlayer_syncCacheLock(stringUri);
+        }
+    }
+
+    private void updateFolderInfoBrowsedPlayer_syncCacheLock(String stringUri) {
+        Log.d(TAG, "updateFolderInfoBrowsedPlayer_syncCacheLock");
+
+        final Iterator<DisplayInfoForClient> displayIterator = mRcDisplays.iterator();
+        while (displayIterator.hasNext()) {
+            final DisplayInfoForClient di = (DisplayInfoForClient) displayIterator.next();
+            if (di.mEnabled) {
+                try {
+                    di.mRcDisplay.updateFolderInfoBrowsedPlayer(stringUri);
+                } catch (RemoteException e) {
+                    Log.e(TAG, "Error in updateFolderInfoBrowsedPlayer(), dead display "
+                                                                        + di.mRcDisplay, e);
+                    displayIterator.remove();
+                }
+            }
+        }
+    }
+
+    /**
+     * @hide
+     */
+    public void updateNowPlayingContentChange() {
+        Log.e(TAG, "updateNowPlayingContentChange");
+        synchronized(mCacheLock) {
+            updateNowPlayingContentChange_syncCacheLock();
+        }
+    }
+
+    private void updateNowPlayingContentChange_syncCacheLock() {
+        final Iterator<DisplayInfoForClient> displayIterator = mRcDisplays.iterator();
+        while (displayIterator.hasNext()) {
+            final DisplayInfoForClient di = (DisplayInfoForClient) displayIterator.next();
+            if (di.mEnabled) {
+                try {
+                    di.mRcDisplay.updateNowPlayingContentChange();
+                } catch (RemoteException e) {
+                    Log.e(TAG, "Error in updateNowPlayingContentChange(), dead display "
+                                                                        + di.mRcDisplay, e);
+                    displayIterator.remove();
+                }
+            }
+        }
+    }
     private void initiateCheckForDrift_syncCacheLock() {
         if (mEventHandler == null) {
             return;
@@ -737,6 +846,56 @@ public class RemoteControlClient
         }
     }
 
+    /**
+     * @hide
+     */
+    public interface OnGetNowPlayingEntriesListener {
+        public abstract void onGetNowPlayingEntries();
+    }
+
+    /**
+     * @hide
+     */
+    public void setNowPlayingEntriesUpdateListener(OnGetNowPlayingEntriesListener l) {
+        Log.d(TAG, "setNowPlayingEntriesUpdateListener");
+        synchronized(mCacheLock) {
+            mGetNowPlayingEntriesListener = l;
+        }
+    }
+
+    /**
+     * @hide
+     */
+    public interface OnSetBrowsedPlayerListener {
+        public abstract void onSetBrowsedPlayer();
+    }
+
+    /**
+     * @hide
+     */
+    public void setBrowsedPlayerUpdateListener(OnSetBrowsedPlayerListener l) {
+        Log.d(TAG, "setBrowsedPlayerUpdateListener");
+        synchronized(mCacheLock) {
+            mSetBrowsedPlayerListener = l;
+        }
+    }
+
+    /**
+     * @hide
+     */
+    public interface OnSetPlayItemListener {
+        public abstract void onSetPlayItem(int scope, long uid);
+    }
+
+    /**
+     * @hide
+     */
+    public void setPlayItemListener(OnSetPlayItemListener l) {
+        Log.d(TAG, "setPlayItemListener");
+        synchronized(mCacheLock) {
+            mSetPlayItemListener = l;
+        }
+    }
 
     /**
      * Interface definition for a callback to be invoked when the media playback position is
@@ -1017,6 +1176,13 @@ public class RemoteControlClient
     /**
      * The current remote control client generation ID across the system, as known by this object
      */
+
+    private OnSetBrowsedPlayerListener mSetBrowsedPlayerListener;
+
+    private OnSetPlayItemListener mSetPlayItemListener;
+
+    private OnGetNowPlayingEntriesListener mGetNowPlayingEntriesListener;
+
     private int mCurrentClientGenId = -1;
     /**
      * The remote control client generation ID, the last time it was told it was the current RC.
@@ -1184,11 +1350,38 @@ public class RemoteControlClient
             }
         }
 
+        public void setPlayItem(int generationId, int scope, long uid) {
+            // only post messages, we can't block here
+            if (mEventHandler != null) {
+                mEventHandler.removeMessages(MSG_SET_PLAY_ITEM);
+                mEventHandler.sendMessage(mEventHandler.obtainMessage(
+                        MSG_SET_PLAY_ITEM, generationId /* arg1 */, scope /* arg2, ignored */,
+                        new Long(uid)));
+            }
+        }
+
+        public void getNowPlayingEntries(int generationId) {
+            // only post messages, we can't block here
+            if (mEventHandler != null) {
+                mEventHandler.removeMessages(MSG_GET_NOW_PLAYING_ENTRIES);
+                mEventHandler.sendMessage(mEventHandler.obtainMessage(
+                        MSG_GET_NOW_PLAYING_ENTRIES, generationId, 0, null));
+            }
+        }
+
         public void updateMetadata(int generationId, int key, Rating value) {
             // only post messages, we can't block here
             if (mEventHandler != null) {
                 mEventHandler.sendMessage(mEventHandler.obtainMessage(
                         MSG_UPDATE_METADATA, generationId /* arg1 */, key /* arg2*/, value));
+            }
+        }
+
+        public void setBrowsedPlayer() {
+            Log.d(TAG, "setBrowsedPlayer");
+            if (mEventHandler != null) {
+                mEventHandler.sendMessage(mEventHandler.obtainMessage(
+                        MSG_SET_BROWSED_PLAYER, 0 /* arg1 */, 0 /* arg2*/, null));
             }
         }
     };
@@ -1237,6 +1430,9 @@ public class RemoteControlClient
     private final static int MSG_UPDATE_METADATA = 13;
     private final static int MSG_REQUEST_METADATA_ARTWORK = 14;
     private final static int MSG_DISPLAY_ENABLE = 15;
+    private final static int MSG_SET_BROWSED_PLAYER = 16;
+    private final static int MSG_SET_PLAY_ITEM = 17;
+    private final static int MSG_GET_NOW_PLAYING_ENTRIES = 18;
 
     private class EventHandler extends Handler {
         public EventHandler(RemoteControlClient rcc, Looper looper) {
@@ -1302,6 +1498,16 @@ public class RemoteControlClient
                     break;
                 case MSG_DISPLAY_ENABLE:
                     onDisplayEnable((IRemoteControlDisplay)msg.obj, msg.arg1 == 1);
+                    break;
+                case MSG_SET_BROWSED_PLAYER:
+                    Log.d(TAG, "MSG_SET_BROWSED_PLAYER");
+                    onSetBrowsedPlayer();
+                    break;
+                case MSG_SET_PLAY_ITEM:
+                    onSetPlayItem(msg.arg1, msg.arg2, ((Long)msg.obj).longValue());
+                    break;
+                case MSG_GET_NOW_PLAYING_ENTRIES:
+                    onGetNowPlayingEntries(msg.arg1);
                     break;
                 default:
                     Log.e(TAG, "Unknown event " + msg.what + " in RemoteControlClient handler");
@@ -1662,6 +1868,36 @@ public class RemoteControlClient
         synchronized (mCacheLock) {
             if ((mCurrentClientGenId == generationId) && (mMetadataUpdateListener != null)) {
                 mMetadataUpdateListener.onMetadataUpdate(key, value);
+            }
+        }
+    }
+
+    private void onSetPlayItem(int generationId, int scope, long uid) {
+        Log.d(TAG, "onSetPlayItem");
+        synchronized (mCacheLock) {
+            if (mSetPlayItemListener != null) {
+                Log.d(TAG, "mSetPlayItemListener.onSetPlayItem");
+                mSetPlayItemListener.onSetPlayItem(scope, uid);
+            }
+        }
+    }
+
+    private void onSetBrowsedPlayer() {
+        Log.d(TAG, "onSetBrowsedPlayer");
+        synchronized (mCacheLock) {
+            if (mSetBrowsedPlayerListener != null) {
+                Log.d(TAG, "mSetBrowsedPlayerListener.onSetBrowsedPlayer");
+                mSetBrowsedPlayerListener.onSetBrowsedPlayer();
+            }
+        }
+    }
+
+    private void onGetNowPlayingEntries(int generationId) {
+        Log.d(TAG, "onGetNowPlayingEntries");
+        synchronized (mCacheLock) {
+            if (mGetNowPlayingEntriesListener != null) {
+                Log.d(TAG, "mGetNowPlayingEntriesListener.onGetNowPlayingEntries");
+                mGetNowPlayingEntriesListener.onGetNowPlayingEntries();
             }
         }
     }

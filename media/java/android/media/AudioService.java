@@ -4274,6 +4274,18 @@ public class AudioService extends IAudioService.Stub {
         mMediaFocusControl.setRemoteControlClientPlaybackPosition(generationId, timeMs);
     }
 
+    public void setRemoteControlClientPlayItem(int generationId, long uid, int scope) {
+        mMediaFocusControl.setRemoteControlClientPlayItem(generationId, uid, scope);
+    }
+
+    public void getRemoteControlClientNowPlayingEntries(int generationId) {
+        mMediaFocusControl.getRemoteControlClientNowPlayingEntries(generationId);
+    }
+
+    public void setRemoteControlClientBrowsedPlayer(String packageName) {
+        mMediaFocusControl.setRemoteControlClientBrowsedPlayer(packageName);
+    }
+
     public void updateRemoteControlClientMetadata(int generationId, int key, Rating value) {
         mMediaFocusControl.updateRemoteControlClientMetadata(generationId, key, value);
     }

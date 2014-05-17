@@ -177,6 +177,22 @@ public class Media extends BaseCommand {
                     + " data=" + metadata + " art=" + artwork);
         }
 
+        @Override
+        public void updateFolderInfoBrowsedPlayer(String stringUri) {
+        }
+
+        @Override
+        public void updateNowPlayingContentChange() {
+        }
+
+        @Override
+        public void playItemResponse(boolean success) {
+        }
+
+        @Override
+        public void updateNowPlayingEntries(long[] playList) {
+        }
+
         void printUsageMessage() {
             System.out.println("Monitoring remote control displays...  available commands:");
             System.out.println("(q)uit: finish monitoring");
