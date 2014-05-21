@@ -135,6 +135,11 @@ class CookieManagerClassic extends CookieManager {
     }
 
     @Override
+    public int countCookies() {
+        return nativeCountCookies();
+    }
+
+    @Override
     public void removeAllCookie() {
         nativeRemoveAllCookie();
     }
@@ -181,4 +186,5 @@ class CookieManagerClassic extends CookieManager {
     private static native void nativeFlushCookieStore();
     private static native boolean nativeAcceptFileSchemeCookies();
     private static native void nativeSetAcceptFileSchemeCookies(boolean accept);
+    private static native int nativeCountCookies();
 }
