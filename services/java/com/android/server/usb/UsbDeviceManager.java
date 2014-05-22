@@ -115,6 +115,7 @@ public class UsbDeviceManager {
     private boolean mUseUsbNotification;
     private boolean mAdbEnabled;
     private boolean mAudioSourceEnabled;
+    private boolean mEncryptionInProgress;
     private Map<String, List<Pair<String, String>>> mOemModeMap;
     private String[] mAccessoryStrings;
     private UsbDebuggingManager mDebuggingManager;
@@ -158,6 +159,8 @@ public class UsbDeviceManager {
         initRndisAddress();
 
         readOemUsbOverrideConfig();
+
+        mEncryptionInProgress = (SystemProperties.get("vold.encrypt_progress").length() != 0);
 
         mHandler = new UsbHandler(FgThread.get().getLooper());
 
@@ -599,8 +602,10 @@ public class UsbDeviceManager {
                 case MSG_UPDATE_STATE:
                     mConnected = (msg.arg1 == 1);
                     mConfigured = (msg.arg2 == 1);
-                    StorageManager storageManager = StorageManager.from(mContext);
-                    storageManager.setUsbMassStorageEnabled(mConnected);
+                    if (!mEncryptionInProgress) {
+                        StorageManager storageManager = StorageManager.from(mContext);
+                        storageManager.setUsbMassStorageEnabled(mConnected);
+                    }
                     updateUsbNotification();
                     updateAdbNotification();
                     if (containsFunction(mCurrentFunctions,
