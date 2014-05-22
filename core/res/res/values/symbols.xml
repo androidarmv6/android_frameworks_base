@@ -1826,4 +1826,7 @@
 
   <!-- From keyguard for showing am/pm in unlock screen -->
   <java-symbol type="bool" name="config_show_ampm_in_unlock_screen" />
+
+  <!-- config delay timer to start PPPOE -->
+  <java-symbol type="integer" name="config_delay_startPPPOE_timer" />
 </resources>
