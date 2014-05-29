@@ -131,12 +131,7 @@ public class WipowerDynamicParam {
             res[13] = (byte)((MSB_MASK & mSetRectVoltageDyn) >> 8);
             res[14] = (byte)(LSB_MASK & mMaxRectVoltageDyn);
             res[15] = (byte)((MSB_MASK & mMaxRectVoltageDyn) >> 8);
-
-            if((mAlert & 0x40) == 0x40) {
-                res[16] = (byte)(mAlert ^ 0x40);
-            } else {
             res[16] = mAlert;
-            }
 
             Log.i(LOGTAG, "mPruDynamicParam.getValue");
             return res;
@@ -169,54 +164,13 @@ public class WipowerDynamicParam {
            return (short)((adc)*(IREG_ADC_TO_mA_RATIO));
         }
 
-       /**
-        * {@hide}
-        * Sets the PRU dynamic parameter values in bytes
-        *
-        * @return none
-        */
-        public void setValue(byte[] value) {
-            short tempmRectVoltage = 0x0000;
-            short tempmRectCurrent = 0x0000;
-            tempmRectVoltage = (short)toUnsigned(value[1]);
-            tempmRectVoltage |= (short)(toUnsigned(value[2]) << 8);
-            tempmRectCurrent = (short)toUnsigned(value[3]);
-            tempmRectCurrent |= (short)(toUnsigned(value[4]) << 8);
-
-            Log.i(LOGTAG, "tempmRectVoltage: " + tempmRectVoltage + "tempmRectCurrent: " + tempmRectCurrent);
-            resetValues();
-
-            mOptValidity = value[0];
-
-            mRectVoltage = (short)(VREG_ADC_TO_mV(tempmRectVoltage));
-            mRectCurrent = (short)(IREG_ADC_TO_mA(tempmRectCurrent));
-            mOutputVoltage = (short)toUnsigned(value[5]);
-            mOutputVoltage |= (short)(toUnsigned(value[6]) << 8);
-            mOutputCurrent = (short)toUnsigned(value[7]);
-            mOutputCurrent |= (short)(toUnsigned(value[8]) << 8);
-            mTemperature = value[9];
-            mMinRectVoltageDyn = (short)toUnsigned(value[10]);
-            mMinRectVoltageDyn |= (short)(toUnsigned(value[11]) << 8);
-            mSetRectVoltageDyn = (short)toUnsigned(value[12]);
-            mSetRectVoltageDyn |= (short)(toUnsigned(value[13]) << 8);
-            mMaxRectVoltageDyn = (short)toUnsigned(value[14]);
-            mMaxRectVoltageDyn |= (short)(toUnsigned(value[15]) << 8);
-
-            mAlert = value[16];
-            mReserved1 = (short)(toUnsigned(value[17]));
-            mReserved1 = (short)(toUnsigned(value[18]) << 8);
-            mReserved2 = value[19];
-            Log.i(LOGTAG, "mPruDynamicParam.setValue");
-            print();
-            return;
-        }
-       /**
+        /**
         * {@hide}
         * Sets the PRU dynamic parameter values for A4WP App in bytes
         *
         * @return none
         */
-        public void setAppValue(byte[] value) {
+        public void setValue(byte[] value) {
 
             resetValues();
             mOptValidity = value[0];

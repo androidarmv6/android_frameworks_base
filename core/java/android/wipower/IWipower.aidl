@@ -50,6 +50,7 @@ interface IWipower
 
     boolean enableAlert(boolean enable);
     boolean enableData(boolean enable);
+    boolean enablePowerApply(boolean enable, boolean on, boolean time_flag);
 
     void registerCallback(in IWipowerManagerCallback callback);
     void unregisterCallback(in IWipowerManagerCallback callback);
