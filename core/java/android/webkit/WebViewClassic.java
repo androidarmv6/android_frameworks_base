@@ -1363,6 +1363,11 @@ public final class WebViewClassic implements WebViewProvider, WebViewProvider.Sc
         }
 
         @Override
+        public void freeMemoryForTests() {
+            WebViewFactory.getProvider().getStatics().freeMemoryForTests();
+        }
+
+        @Override
         public void setWebContentsDebuggingEnabled(boolean enable) {
             // no-op for WebViewClassic.
         }
