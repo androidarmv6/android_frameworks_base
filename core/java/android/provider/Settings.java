@@ -4873,6 +4873,14 @@ public final class Settings {
         public static final String ADB_ENABLED = "adb_enabled";
 
         /**
+         * Value of ADB_ENABLED just before the device is put into Charging mode
+         * This is done to switch back to this state of Adb after user comes out
+         * of charging mode.
+         * @hide
+         */
+        public static final String ADB_ENABLED_SAVED_STATE = "adb_enabled_saved_state";
+
+        /**
          * Whether assisted GPS should be enabled or not.
          * @hide
          */
