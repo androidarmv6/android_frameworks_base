@@ -87,6 +87,10 @@ ifeq ($(USE_OPENGL_RENDERER),true)
 		LOCAL_CFLAGS += -DQCOM_HARDWARE
 	endif
 
+	ifeq ($(TARGET_DOESNT_USE_FENCE_SYNC),true)
+		LOCAL_CFLAGS += -DDONT_USE_FENCE_SYNC
+	endif
+
 	include $(BUILD_SHARED_LIBRARY)
 
 	include $(call all-makefiles-under,$(LOCAL_PATH))
