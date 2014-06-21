@@ -111,6 +111,9 @@ public class UsbDeviceManager {
     @GuardedBy("mLock")
     private UsbSettingsManager mCurrentSettings;
     private NotificationManager mNotificationManager;
+    private UsbManager mUsbManager;
+    private int mAdbSavedState;
+    private boolean mIsChargingMode;
     private final boolean mHasUsbAccessory;
     private boolean mUseUsbNotification;
     private boolean mAdbEnabled;
@@ -193,6 +196,7 @@ public class UsbDeviceManager {
 
         mNotificationManager = (NotificationManager)
                 mContext.getSystemService(Context.NOTIFICATION_SERVICE);
+        mUsbManager = (UsbManager)mContext.getSystemService(Context.USB_SERVICE);
 
         // We do not show the USB notification if the primary volume supports mass storage.
         // The legacy mass storage UI will be used instead.
@@ -201,6 +205,16 @@ public class UsbDeviceManager {
         final StorageVolume primary = storageManager.getPrimaryVolume();
         massStorageSupported = primary != null && primary.allowMassStorage();
         mUseUsbNotification = !massStorageSupported;
+
+        //get the value ADB_ENABLED_SAVED_STATE
+        mAdbSavedState= Settings.Global.getInt(mContentResolver,
+                Settings.Global.ADB_ENABLED_SAVED_STATE, 1);
+
+       if (UsbManager.USB_FUNCTION_CHARGING.equals(mUsbManager.getDefaultFunction())) {
+           mIsChargingMode = true;
+       } else {
+           mIsChargingMode = false;
+       }
 
         // make sure the ADB_ENABLED setting value matches the current state
         Settings.Global.putInt(mContentResolver, Settings.Global.ADB_ENABLED, mAdbEnabled ? 1 : 0);
@@ -459,19 +473,61 @@ public class UsbDeviceManager {
             }
         }
 
+        private void updateAdbEnabledDatabase(String functions) {
+            if (UsbManager.USB_FUNCTION_CHARGING.equals(functions)) {
+                mIsChargingMode = true;
+                // save present adb configuration before updating to
+                // charging mode adb Configuration.( i.e. Settings.Global.ADB_ENABLED to 0)
+                mAdbSavedState = Settings.Global.getInt(mContentResolver,
+                        Settings.Global.ADB_ENABLED, 1);
+                Settings.Global.putInt(mContentResolver,
+                        Settings.Global.ADB_ENABLED_SAVED_STATE, mAdbSavedState);
+                // update database property Settings.Global.ADB_ENABLED with 0
+                // as adb should not be ON while Charging
+                Settings.Global.putInt(mContentResolver, Settings.Global.ADB_ENABLED, 0);
+                mHandler.setAdbEnabled(false);
+            } else { // when current function is anything other than Charging
+                if (mIsChargingMode) {
+                    // When previously the function was Charging
+                    // i.e. we are switching to some other function from Charging
+                    // So,update Settings.Global.ADB_ENABLED with previously saved adb-configuration
+                    Settings.Global.putInt(mContentResolver,
+                            Settings.Global.ADB_ENABLED, mAdbSavedState);
+                    mIsChargingMode = false;
+                    mHandler.setAdbEnabled(mAdbSavedState == 1 ? true : false);
+                }
+            }
+
+        }
+
+        private String addOrRemoveAdbFunction(String functions) {
+            if (UsbManager.USB_FUNCTION_CHARGING.equals(functions)) {
+                functions = removeFunction(functions, UsbManager.USB_FUNCTION_ADB);
+            } else if (mIsChargingMode) {
+                if (mAdbSavedState == 1) {
+                    functions = addFunction(functions, UsbManager.USB_FUNCTION_ADB);
+                }
+                else {
+                    functions = removeFunction(functions, UsbManager.USB_FUNCTION_ADB);
+                }
+            } else {
+                if (mAdbEnabled) {
+                    functions = addFunction(functions, UsbManager.USB_FUNCTION_ADB);
+                }
+                else {
+                    functions = removeFunction(functions, UsbManager.USB_FUNCTION_ADB);
+                }
+            }
+            return functions;
+        }
+
         private void setEnabledFunctions(String functions, boolean makeDefault) {
 
             // Do not update persystent.sys.usb.config if the device is booted up
             // with OEM specific mode.
             if (functions != null && makeDefault && !needsOemUsbOverride()) {
 
-                if (!UsbManager.USB_FUNCTION_CHARGING.equals(functions)) {
-                    if (mAdbEnabled) {
-                        functions = addFunction(functions, UsbManager.USB_FUNCTION_ADB);
-                    } else {
-                        functions = removeFunction(functions, UsbManager.USB_FUNCTION_ADB);
-                    }
-                }
+                functions = addOrRemoveAdbFunction(functions);
                 if (!mDefaultFunctions.equals(functions)) {
                     if (!setUsbConfig("none")) {
                         Slog.e(TAG, "Failed to disable USB");
@@ -485,6 +541,7 @@ public class UsbDeviceManager {
                     if (waitForState(functions)) {
                         mCurrentFunctions = functions;
                         mDefaultFunctions = functions;
+                        updateAdbEnabledDatabase(functions);
                     } else {
                         Slog.e(TAG, "Failed to switch persistent USB config to " + functions);
                         // revert to previous configuration if we fail
@@ -499,13 +556,7 @@ public class UsbDeviceManager {
                 // Override with bootmode specific usb mode if needed
                 functions = processOemUsbOverride(functions);
 
-                if (!UsbManager.USB_FUNCTION_CHARGING.equals(functions)) {
-                    if (mAdbEnabled) {
-                        functions = addFunction(functions, UsbManager.USB_FUNCTION_ADB);
-                    } else {
-                        functions = removeFunction(functions, UsbManager.USB_FUNCTION_ADB);
-                    }
-                }
+                functions = addOrRemoveAdbFunction(functions);
                 if (!mCurrentFunctions.equals(functions)) {
                     if (!setUsbConfig("none")) {
                         Slog.e(TAG, "Failed to disable USB");
@@ -515,6 +566,7 @@ public class UsbDeviceManager {
                     }
                     if (setUsbConfig(functions)) {
                         mCurrentFunctions = functions;
+                        updateAdbEnabledDatabase(functions);
                     } else {
                         Slog.e(TAG, "Failed to switch USB config to " + functions);
                         // revert to previous configuration if we fail
