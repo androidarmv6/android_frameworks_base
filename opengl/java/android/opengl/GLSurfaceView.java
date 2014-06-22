@@ -171,6 +171,7 @@ public class GLSurfaceView extends SurfaceView implements SurfaceHolder.Callback
     private final static boolean LOG_EGL = false;
 
     private final static boolean RGB565 = SystemProperties.getBoolean("ro.opengles.surface.rgb565", false);
+    private final static boolean RGBA8888 = SystemProperties.getBoolean("ro.opengles.surface.rgba8888", false);
     /**
      * The renderer only renders
      * when the surface is created, or when {@link #requestRender} is called.
@@ -922,6 +923,12 @@ public class GLSurfaceView extends SurfaceView implements SurfaceHolder.Callback
             mAlphaSize = alphaSize;
             mDepthSize = depthSize;
             mStencilSize = stencilSize;
+
+            /* If needed, transform RGB_888 to RGBA_8888 */
+            if (RGBA8888 && (mRedSize == 8 && mGreenSize == 8 &&
+                    mBlueSize == 8 && mAlphaSize == 0)) {
+                mAlphaSize = 8;
+            }
        }
 
         @Override
@@ -976,7 +983,7 @@ public class GLSurfaceView extends SurfaceView implements SurfaceHolder.Callback
      */
     private class SimpleEGLConfigChooser extends ComponentSizeChooser {
         public SimpleEGLConfigChooser(boolean withDepthBuffer) {
-            super(RGB565 ? 5 : 8, RGB565 ? 6 : 8, RGB565 ? 5 : 8, 0, withDepthBuffer ? 16 : 0, 0);
+            super(RGB565 ? 5 : 8, RGB565 ? 6 : 8, RGB565 ? 5 : 8, RGBA8888 ? 8 : 0, withDepthBuffer ? 16 : 0, 0);
         }
     }
 
