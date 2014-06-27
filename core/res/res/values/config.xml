@@ -1483,4 +1483,6 @@
     <string name="config_rat_3g" translatable="false">3G</string>
     <string name="config_rat_4g" translatable="false">4G</string>
 
+    <!-- config network mode to operator specific -->
+    <bool name="config_network_mode_overriden">false</bool>
 </resources>
