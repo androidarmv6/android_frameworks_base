@@ -554,6 +554,25 @@ public final class QBluetoothAdapter {
          return false;
      }
 
+     /**
+      * sets Tx Power level in LE advertisements
+      * <p>Requires the {@link android.Manifest.permission#BLUETOOTH_ADMIN}
+      * permission
+      * @return returns true if operation successful
+      /** @hide */
+      public boolean setLETxPowerLevel(int txPowerLevel){
+          if (mAdapter.getState() != BluetoothAdapter.STATE_ON)
+              return false;
+          Log.v(TAG, "QBluetooth adapter, setLETxPower txPowerLevel::"+ txPowerLevel);
+          try {
+              synchronized(mManagerCallback) {
+                  if (mService!=null && mQService != null)
+                      return mQService.setLETxPowerLevel(txPowerLevel);
+              }
+          } catch (RemoteException e) {Log.e(TAG, "setLETxPower", e);}
+          return false;
+      }
+
     protected void finalize() throws Throwable {
         try {
             mManagerService.unregisterQAdapter(mManagerCallback);

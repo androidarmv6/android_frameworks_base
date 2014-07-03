@@ -60,4 +60,5 @@ interface IQBluetooth
     void enableLeLppRssiMonitor(in String address, in boolean enable);
     boolean sendLEConnUpdate(in BluetoothDevice device, in int interval_min, in int interval_max, in int latency,
             in int supervisionTimeout);
+    boolean setLETxPowerLevel(in int txPowerLevel);
 }
