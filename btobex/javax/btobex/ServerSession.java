@@ -769,7 +769,7 @@ public final class ServerSession extends ObexSession implements Runnable {
         sendData[0] = (byte)code;
         sendData[1] = length[2];
         sendData[2] = length[3];
-        sendData[3] = (byte)0x12;
+        sendData[3] = (byte)0x10;
         sendData[4] = (byte)0x00;
         sendData[5] = (byte)(mMaxPacketLength >> 8);
         sendData[6] = (byte)(mMaxPacketLength & 0xFF);
