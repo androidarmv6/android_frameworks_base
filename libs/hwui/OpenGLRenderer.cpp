@@ -715,10 +715,10 @@ void OpenGLRenderer::clearLayerUpdates() {
 }
 
 void OpenGLRenderer::flushLayerUpdates() {
+#ifndef DONT_USE_FENCE_SYNC
     syncState();
     updateLayers();
     flushLayers();
-#ifndef DONT_USE_FENCE_SYNC
     // Wait for all the layer updates to be executed
     AutoFence fence;
 #endif
