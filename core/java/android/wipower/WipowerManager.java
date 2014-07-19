@@ -372,9 +372,9 @@ public final class WipowerManager {
             Log.e(TAG, " Wipower Service not available");
         } else {
             byte level = 0;
-            if( powerlevel == PowerLevel.POWER_LEVEL_MINIMUM) level = (31/3);
-            else if(  powerlevel == PowerLevel.POWER_LEVEL_MEDIUM) level = ((31/3) * 2);
-            else if(  powerlevel == PowerLevel.POWER_LEVEL_MAXIMUM) level = 31;
+            if( powerlevel == PowerLevel.POWER_LEVEL_MINIMUM) level = 2;
+            else if(  powerlevel == PowerLevel.POWER_LEVEL_MEDIUM) level = 1;
+            else if(  powerlevel == PowerLevel.POWER_LEVEL_MAXIMUM) level = 0;
             try {
                 ret = mService.setCurrentLimit(level);
             } catch (android.os.RemoteException e) {
@@ -478,6 +478,29 @@ public final class WipowerManager {
 
         return ret;
     }
+
+   /**
+    * Enables power detection command.
+    *
+    *  @return true on success or flase otherwise
+    * {@hide}
+    */
+    public boolean enablePowerApply(boolean enable, boolean on, boolean time_flag) {
+        boolean ret = false;
+        Log.v(TAG,"enablePowerApply: enable: " + enable + " on: " + on + "time_flag" + time_flag);
+        if (mService == null) {
+            Log.e(TAG, "Service  not available");
+        } else {
+            try {
+                ret = mService.enablePowerApply(enable, on, time_flag);
+            } catch (android.os.RemoteException e) {
+                Log.e(TAG, "Service  Exceptione");
+            }
+        }
+
+        return ret;
+    }
+
 
    /** API used to reigester the wipower callbacks.
     * {@hide}
