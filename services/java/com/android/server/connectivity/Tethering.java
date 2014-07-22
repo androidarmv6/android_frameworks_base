@@ -1440,6 +1440,10 @@ public class Tethering extends INetworkManagementEventObserver.Stub {
                             + mPreferredUpstreamMobileApn + ", got type=" + upType);
                 }
 
+                if (upType != ConnectivityManager.TYPE_NONE) {
+                    mRetryCount = 0;
+                }
+
                 // if we're on DUN, put our own grab on it
                 if (upType == ConnectivityManager.TYPE_MOBILE_DUN ||
                         upType == ConnectivityManager.TYPE_MOBILE_HIPRI) {
@@ -1464,14 +1468,12 @@ public class Tethering extends INetworkManagementEventObserver.Stub {
                                                 (mPreferredUpstreamMobileApn) == true)) {
                                     // we think mobile should be coming up - don't set a retry
                                     tryAgainLater = false;
-                                    mRetryCount = 0;
+                                    mRetryCount++;
                                 }
                                 if (tryAgainLater) {
-                                    mRetryCount++;
                                     sendMessageDelayed(CMD_RETRY_UPSTREAM, UPSTREAM_SETTLE_TIME_MS);
                                 }
                             } else {
-                               mRetryCount = 0;
                                turnOffUpstreamMobileConnection();
                                Log.d(TAG, "chooseUpstreamType: Reached MAX, NO RETRIES");
                             }
