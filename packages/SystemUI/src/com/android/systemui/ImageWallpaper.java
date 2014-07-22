@@ -61,6 +61,7 @@ public class ImageWallpaper extends WallpaperService {
     private static final String GL_LOG_TAG = "ImageWallpaperGL";
     private static final boolean DEBUG = false;
     private static final String PROPERTY_KERNEL_QEMU = "ro.kernel.qemu";
+    private static final String PROPERTY_USE_GL_WALLPAPER = "ro.systemui.use_gl_wallpaper";
 
     static final boolean FIXED_SIZED_SURFACE = true;
     static final boolean USE_OPENGL = true;
@@ -93,6 +94,10 @@ public class ImageWallpaper extends WallpaperService {
 
     private static boolean isEmulator() {
         return "1".equals(SystemProperties.get(PROPERTY_KERNEL_QEMU, "0"));
+    }
+
+    private static boolean useGlWallpaper() {
+        return "1".equals(SystemProperties.get(PROPERTY_USE_GL_WALLPAPER, "1"));
     }
 
     @Override
@@ -424,7 +429,7 @@ public class ImageWallpaper extends WallpaperService {
                 Log.d(TAG, "Redrawing wallpaper");
             }
 
-            if (mIsHwAccelerated) {
+            if (mIsHwAccelerated && useGlWallpaper()) {
                 if (!drawWallpaperWithOpenGL(sh, availw, availh, xPixels, yPixels)) {
                     drawWallpaperWithCanvas(sh, availw, availh, xPixels, yPixels);
                 }
