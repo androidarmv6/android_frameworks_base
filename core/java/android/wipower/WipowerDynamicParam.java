@@ -62,6 +62,11 @@ public class WipowerDynamicParam {
         private static final float VREG_ADC_TO_mV_RATIO = ((float)(2.44/256)*10000);
         private static final float IREG_ADC_TO_mA_RATIO = ((float)(2.44/256)*500);
 
+        /* Over volatage protection parameters */
+        private static final byte OVP_BIT = (byte)0x80;
+        private static final short OVP_THRESHHOLD_VAL = 21500;
+
+
         /**
         * Default Constructor
         * {@hide}
@@ -132,6 +137,8 @@ public class WipowerDynamicParam {
             res[14] = (byte)(LSB_MASK & mMaxRectVoltageDyn);
             res[15] = (byte)((MSB_MASK & mMaxRectVoltageDyn) >> 8);
             res[16] = mAlert;
+            if (((res[16] & OVP_BIT) == OVP_BIT) && (mRectVoltage < OVP_THRESHHOLD_VAL))
+               res[16]  = (byte)(res[16] & ~OVP_BIT);
 
             Log.i(LOGTAG, "mPruDynamicParam.getValue");
             return res;
