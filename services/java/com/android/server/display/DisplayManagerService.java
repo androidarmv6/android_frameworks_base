@@ -1076,6 +1076,15 @@ public final class DisplayManagerService extends IDisplayManager.Stub {
                     + device.getDisplayDeviceInfoLocked());
             return;
         }
+
+        // DigitalPenOffScreenDisplay should rotate when the default display rotates
+        if (device.getNameLocked().equals(DigitalPenOffScreenDisplayAdapter.getDisplayName()) &&
+            !DigitalPenOffScreenDisplayAdapter.isDigitalPenDisabled()) {
+            DisplayInfo primaryDisplayInfo = getDisplayInfo(Display.DEFAULT_DISPLAY);
+            DisplayInfo digitalPenOffScreenInfo = display.getDisplayInfoLocked();
+            digitalPenOffScreenInfo.rotation = primaryDisplayInfo.rotation;
+        }
+
         boolean isBlanked = (mAllDisplayBlankStateFromPowerManager == DISPLAY_BLANK_STATE_BLANKED)
                 && (info.flags & DisplayDeviceInfo.FLAG_NEVER_BLANK) == 0;
         display.configureDisplayInTransactionLocked(device, isBlanked);
