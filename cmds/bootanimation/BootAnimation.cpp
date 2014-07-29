@@ -258,8 +258,8 @@ status_t BootAnimation::initTexture(void* buffer, size_t len)
     SkBitmap bitmap;
     SkMemoryStream  stream(buffer, len);
     SkImageDecoder* codec = SkImageDecoder::Factory(&stream);
-    codec->setDitherImage(false);
     if (codec) {
+        codec->setDitherImage(false);
         codec->decode(&stream, &bitmap,
                 SkBitmap::kARGB_8888_Config,
                 SkImageDecoder::kDecodePixels_Mode);
@@ -338,7 +338,9 @@ status_t BootAnimation::readyToRun() {
     // create the native surface
     sp<SurfaceControl> control = session()->createSurface(String8("BootAnimation"),
             dinfo.w, dinfo.h, PIXEL_FORMAT_RGB_565);
-
+    if(control.get() == NULL) {
+        return NO_INIT;
+    }
     SurfaceComposerClient::openGlobalTransaction();
     control->setLayer(0x40000000);
     SurfaceComposerClient::closeGlobalTransaction();
