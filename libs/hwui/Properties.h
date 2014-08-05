@@ -36,11 +36,7 @@
 #define LAYER_REMOVE_BIGGEST_FIRST 0
 
 // Textures used by layers must have dimensions multiples of this number
-#ifdef BCM_HARDWARE
-#define LAYER_SIZE 16
-#else
 #define LAYER_SIZE 64
-#endif
 
 // Defines the size in bits of the stencil buffer for the framebuffer
 // Note: Only 1 bit is required for clipping but more bits are required
