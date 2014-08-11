@@ -2843,17 +2843,9 @@ void TouchInputMapper::configureParameters() {
         // The device is a cursor device with a touch pad attached.
         // By default don't use the touch pad to move the pointer.
         mParameters.deviceType = Parameters::DEVICE_TYPE_TOUCH_PAD;
-#ifdef BCM_HARDWARE
-        ALOGE("DEVICE_TYPE_TOUCH_PAD");
-#endif
     } else {
         // The device is a touch pad of unknown purpose.
-#ifndef BCM_HARDWARE
         mParameters.deviceType = Parameters::DEVICE_TYPE_POINTER;
-#else
-        mParameters.deviceType = Parameters::DEVICE_TYPE_TOUCH_SCREEN;
-        ALOGE("DEVICE_TYPE_POINTER - modded to TOUCH_SCREEN");
-#endif
     }
 
     mParameters.hasButtonUnderPad=
